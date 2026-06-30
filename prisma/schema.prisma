@@ -52,8 +52,9 @@ model Teacher {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   students Student[] // Relation: Guru manages these students
+  setting  TeacherSetting?
 
   @@map("teachers")
 }
@@ -169,3 +170,33 @@ model Report {
 
   @@map("reports")
 }
+
+model TeacherSetting {
+  id                  String   @id @default(uuid())
+  teacherId           String   @unique @map("teacher_id")
+  
+  // Limits (jumlah soal)
+  preTestLimitMult    Int      @default(10) @map("pre_test_limit_mult")
+  preTestLimitDiv     Int      @default(10) @map("pre_test_limit_div")
+  practiceLimitMult   Int      @default(10) @map("practice_limit_mult")
+  practiceLimitDiv    Int      @default(10) @map("practice_limit_div")
+  postTestLimitMult   Int      @default(10) @map("post_test_limit_mult")
+  postTestLimitDiv    Int      @default(10) @map("post_test_limit_div")
+  
+  // Time limits per question in seconds (0 = no limit)
+  preTestTimeMult     Int      @default(5)  @map("pre_test_time_mult")
+  preTestTimeDiv      Int      @default(5)  @map("pre_test_time_div")
+  practiceTimeMult    Int      @default(0)  @map("practice_time_mult")
+  practiceTimeDiv     Int      @default(0)  @map("practice_time_div")
+  postTestTimeMult    Int      @default(5)  @map("post_test_time_mult")
+  postTestTimeDiv     Int      @default(5)  @map("post_test_time_div")
+
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  teacher             Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@map("teacher_settings")
+}
+

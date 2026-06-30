@@ -88,6 +88,95 @@ function TeacherDashboardContent() {
   // Exam verification state
   const [examLoading, setExamLoading] = useState(false);
 
+  // Tab state
+  const [activeTab, setActiveTab] = useState<'roster' | 'settings'>('roster');
+
+  // Settings states
+  const [settings, setSettings] = useState<any>(null);
+  const [settingsLoading, setSettingsLoading] = useState(false);
+  const [settingsSaveSuccess, setSettingsSaveSuccess] = useState(false);
+
+  // Settings form states
+  const [preTestLimitMult, setPreTestLimitMult] = useState(10);
+  const [preTestLimitDiv, setPreTestLimitDiv] = useState(10);
+  const [practiceLimitMult, setPracticeLimitMult] = useState(10);
+  const [practiceLimitDiv, setPracticeLimitDiv] = useState(10);
+  const [postTestLimitMult, setPostTestLimitMult] = useState(10);
+  const [postTestLimitDiv, setPostTestLimitDiv] = useState(10);
+
+  const [preTestTimeMult, setPreTestTimeMult] = useState(5);
+  const [preTestTimeDiv, setPreTestTimeDiv] = useState(5);
+  const [practiceTimeMult, setPracticeTimeMult] = useState(0);
+  const [practiceTimeDiv, setPracticeTimeDiv] = useState(0);
+  const [postTestTimeMult, setPostTestTimeMult] = useState(5);
+  const [postTestTimeDiv, setPostTestTimeDiv] = useState(5);
+
+  // Load settings from database
+  useEffect(() => {
+    if (!teacherUserId) return;
+    setSettingsLoading(true);
+    fetch(`/api/teacher/settings?teacherUserId=${teacherUserId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.settings) {
+          setSettings(data.settings);
+          setPreTestLimitMult(data.settings.preTestLimitMult);
+          setPreTestLimitDiv(data.settings.preTestLimitDiv);
+          setPracticeLimitMult(data.settings.practiceLimitMult);
+          setPracticeLimitDiv(data.settings.practiceLimitDiv);
+          setPostTestLimitMult(data.settings.postTestLimitMult);
+          setPostTestLimitDiv(data.settings.postTestLimitDiv);
+
+          setPreTestTimeMult(data.settings.preTestTimeMult);
+          setPreTestTimeDiv(data.settings.preTestTimeDiv);
+          setPracticeTimeMult(data.settings.practiceTimeMult);
+          setPracticeTimeDiv(data.settings.practiceTimeDiv);
+          setPostTestTimeMult(data.settings.postTestTimeMult);
+          setPostTestTimeDiv(data.settings.postTestTimeDiv);
+        }
+      })
+      .catch((err) => console.error('Failed to fetch settings:', err))
+      .finally(() => setSettingsLoading(false));
+  }, [teacherUserId]);
+
+  const handleSaveSettings = async () => {
+    setSettingsLoading(true);
+    setSettingsSaveSuccess(false);
+    try {
+      const response = await fetch('/api/teacher/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          teacherUserId,
+          preTestLimitMult,
+          preTestLimitDiv,
+          practiceLimitMult,
+          practiceLimitDiv,
+          postTestLimitMult,
+          postTestLimitDiv,
+          preTestTimeMult,
+          preTestTimeDiv,
+          practiceTimeMult,
+          practiceTimeDiv,
+          postTestTimeMult,
+          postTestTimeDiv,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to save settings');
+      }
+      setSettings(data.settings);
+      setSettingsSaveSuccess(true);
+      setTimeout(() => setSettingsSaveSuccess(false), 3000);
+    } catch (err: any) {
+      console.error('Error saving settings:', err);
+      alert(`Gagal menyimpan pengaturan: ${err.message}`);
+    } finally {
+      setSettingsLoading(false);
+    }
+  };
+
   // Load roster data from database
   useEffect(() => {
     setLoading(true);
@@ -322,8 +411,265 @@ function TeacherDashboardContent() {
         </div>
       </div>
 
-      {/* Main Grid Container */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+      {/* Tab Selector */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+        <div className="flex space-x-2 border-b border-slate-200 pb-px">
+          <button
+            onClick={() => setActiveTab('roster')}
+            className={`px-5 py-2.5 rounded-t-lg font-bold text-xs sm:text-sm transition-all border-b-2 ${
+              activeTab === 'roster'
+                ? 'border-teal-500 text-teal-600 bg-white shadow-sm font-black'
+                : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+            }`}
+          >
+            👥 Perkembangan Siswa
+          </button>
+          <button
+            onClick={() => setActiveTab('settings')}
+            className={`px-5 py-2.5 rounded-t-lg font-bold text-xs sm:text-sm transition-all border-b-2 ${
+              activeTab === 'settings'
+                ? 'border-teal-500 text-teal-600 bg-white shadow-sm font-black'
+                : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+            }`}
+          >
+            ⚙️ Pengaturan Soal & Waktu
+          </button>
+        </div>
+      </div>
+
+      {activeTab === 'settings' ? (
+        /* Settings Tab UI */
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 space-y-6">
+          <Card className="border border-slate-200 shadow-xl overflow-hidden bg-white">
+            <div className="h-2 bg-gradient-to-r from-teal-500 to-indigo-500" />
+            <CardHeader className="pb-4 border-b border-slate-150">
+              <CardTitle className="text-2xl text-slate-800 font-extrabold flex items-center">
+                ⚙️ Pengaturan Parameter Ujian & Latihan
+              </CardTitle>
+              <CardDescription>
+                Atur jumlah soal dan batas waktu pengerjaan per soal untuk pre-test, latihan, dan post-test.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-6 space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                
+                {/* Multiplication Column */}
+                <div className="space-y-6">
+                  <div className="flex items-center space-x-2 pb-2 border-b border-slate-100">
+                    <span className="text-xl">✖️</span>
+                    <h3 className="text-lg font-bold text-slate-800">Jalur Perkalian</h3>
+                  </div>
+                  
+                  {/* Pre-Test Mult */}
+                  <div className="space-y-3 p-4 bg-slate-50 rounded-xl border border-slate-100 shadow-sm">
+                    <h4 className="text-xs font-black text-teal-600 uppercase tracking-wider">Pre-Test (Diagnostik)</h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-500 block mb-1">Jumlah Soal</label>
+                        <input
+                          type="number"
+                          min={1}
+                          max={100}
+                          value={preTestLimitMult}
+                          onChange={(e) => setPreTestLimitMult(Math.max(1, parseInt(e.target.value) || 0))}
+                          className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500/10 bg-white font-bold"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-500 block mb-1">Waktu per Soal (detik)</label>
+                        <input
+                          type="number"
+                          min={1}
+                          max={300}
+                          value={preTestTimeMult}
+                          onChange={(e) => setPreTestTimeMult(Math.max(1, parseInt(e.target.value) || 0))}
+                          className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500/10 bg-white font-bold"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Latihan Mult */}
+                  <div className="space-y-3 p-4 bg-slate-50 rounded-xl border border-slate-100 shadow-sm">
+                    <h4 className="text-xs font-black text-indigo-600 uppercase tracking-wider">Latihan Mandiri</h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-500 block mb-1">Jumlah Soal</label>
+                        <input
+                          type="number"
+                          min={1}
+                          max={100}
+                          value={practiceLimitMult}
+                          onChange={(e) => setPracticeLimitMult(Math.max(1, parseInt(e.target.value) || 0))}
+                          className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500/10 bg-white font-bold"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-500 block mb-1">Waktu per Soal (detik)</label>
+                        <input
+                          type="number"
+                          min={0}
+                          max={300}
+                          value={practiceTimeMult}
+                          onChange={(e) => setPracticeTimeMult(Math.max(0, parseInt(e.target.value) || 0))}
+                          className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500/10 bg-white font-bold"
+                        />
+                        <span className="text-[8px] text-slate-400 mt-0.5 block">* 0 = tanpa batas waktu</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Post-Test Mult */}
+                  <div className="space-y-3 p-4 bg-slate-50 rounded-xl border border-slate-100 shadow-sm">
+                    <h4 className="text-xs font-black text-rose-600 uppercase tracking-wider">Post-Test (Ujian Akhir)</h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-500 block mb-1">Jumlah Soal</label>
+                        <input
+                          type="number"
+                          min={1}
+                          max={100}
+                          value={postTestLimitMult}
+                          onChange={(e) => setPostTestLimitMult(Math.max(1, parseInt(e.target.value) || 0))}
+                          className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500/10 bg-white font-bold"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-500 block mb-1">Waktu per Soal (detik)</label>
+                        <input
+                          type="number"
+                          min={1}
+                          max={300}
+                          value={postTestTimeMult}
+                          onChange={(e) => setPostTestTimeMult(Math.max(1, parseInt(e.target.value) || 0))}
+                          className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500/10 bg-white font-bold"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Division Column */}
+                <div className="space-y-6">
+                  <div className="flex items-center space-x-2 pb-2 border-b border-slate-100">
+                    <span className="text-xl">➗</span>
+                    <h3 className="text-lg font-bold text-slate-800">Jalur Pembagian</h3>
+                  </div>
+
+                  {/* Pre-Test Div */}
+                  <div className="space-y-3 p-4 bg-slate-50 rounded-xl border border-slate-100 shadow-sm">
+                    <h4 className="text-xs font-black text-teal-600 uppercase tracking-wider">Pre-Test (Diagnostik)</h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-500 block mb-1">Jumlah Soal</label>
+                        <input
+                          type="number"
+                          min={1}
+                          max={100}
+                          value={preTestLimitDiv}
+                          onChange={(e) => setPreTestLimitDiv(Math.max(1, parseInt(e.target.value) || 0))}
+                          className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500/10 bg-white font-bold"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-500 block mb-1">Waktu per Soal (detik)</label>
+                        <input
+                          type="number"
+                          min={1}
+                          max={300}
+                          value={preTestTimeDiv}
+                          onChange={(e) => setPreTestTimeDiv(Math.max(1, parseInt(e.target.value) || 0))}
+                          className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500/10 bg-white font-bold"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Latihan Div */}
+                  <div className="space-y-3 p-4 bg-slate-50 rounded-xl border border-slate-100 shadow-sm">
+                    <h4 className="text-xs font-black text-indigo-650 uppercase tracking-wider">Latihan Mandiri</h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-500 block mb-1">Jumlah Soal</label>
+                        <input
+                          type="number"
+                          min={1}
+                          max={100}
+                          value={practiceLimitDiv}
+                          onChange={(e) => setPracticeLimitDiv(Math.max(1, parseInt(e.target.value) || 0))}
+                          className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500/10 bg-white font-bold"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-500 block mb-1">Waktu per Soal (detik)</label>
+                        <input
+                          type="number"
+                          min={0}
+                          max={300}
+                          value={practiceTimeDiv}
+                          onChange={(e) => setPracticeTimeDiv(Math.max(0, parseInt(e.target.value) || 0))}
+                          className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500/10 bg-white font-bold"
+                        />
+                        <span className="text-[8px] text-slate-400 mt-0.5 block">* 0 = tanpa batas waktu</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Post-Test Div */}
+                  <div className="space-y-3 p-4 bg-slate-50 rounded-xl border border-slate-100 shadow-sm">
+                    <h4 className="text-xs font-black text-rose-600 uppercase tracking-wider">Post-Test (Ujian Akhir)</h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-500 block mb-1">Jumlah Soal</label>
+                        <input
+                          type="number"
+                          min={1}
+                          max={100}
+                          value={postTestLimitDiv}
+                          onChange={(e) => setPostTestLimitDiv(Math.max(1, parseInt(e.target.value) || 0))}
+                          className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500/10 bg-white font-bold"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-500 block mb-1">Waktu per Soal (detik)</label>
+                        <input
+                          type="number"
+                          min={1}
+                          max={300}
+                          value={postTestTimeDiv}
+                          onChange={(e) => setPostTestTimeDiv(Math.max(1, parseInt(e.target.value) || 0))}
+                          className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500/10 bg-white font-bold"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+            <CardFooter className="bg-slate-50 border-t border-slate-100 p-4 flex items-center justify-between">
+              <span className="text-xs text-slate-500 font-medium">
+                * Pastikan nilai batas waktu & jumlah soal realistis bagi siswa.
+              </span>
+              <button
+                onClick={handleSaveSettings}
+                disabled={settingsLoading}
+                className="flex items-center justify-center py-2.5 px-6 bg-slate-800 hover:bg-slate-900 text-white text-sm font-extrabold rounded-lg transition-all shadow-md disabled:opacity-50"
+              >
+                {settingsLoading ? (
+                  <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+                ) : settingsSaveSuccess ? (
+                  <Check className="w-4 h-4 mr-1.5 text-emerald-400" />
+                ) : (
+                  <Save className="w-4 h-4 mr-1.5" />
+                )}
+                {settingsSaveSuccess ? 'Pengaturan Disimpan!' : 'Simpan Pengaturan'}
+              </button>
+            </CardFooter>
+          </Card>
+        </div>
+      ) : (
+        /* Main Grid Container */
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
         
         {/* Left column - Students list */}
         <div className="lg:col-span-2 space-y-6">
@@ -697,6 +1043,7 @@ function TeacherDashboardContent() {
         </div>
 
       </div>
+      )}
     </div>
   );
 }

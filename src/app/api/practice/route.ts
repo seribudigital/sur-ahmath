@@ -32,8 +32,14 @@ export async function GET(request: Request) {
 
     const checkProgress = searchParams.get('checkProgress') === 'true';
     if (checkProgress) {
-      const progress = await getUnlockedLevels(studentId);
-      return NextResponse.json({ progress });
+      const progressData = await getUnlockedLevels(studentId);
+      return NextResponse.json({
+        progress: {
+          multiplication: progressData.multiplication,
+          division: progressData.division
+        },
+        settings: progressData.settings
+      });
     }
 
     const operationTypeParam = searchParams.get('operationType'); // 'MULTIPLICATION' or 'DIVISION'
@@ -389,5 +395,37 @@ async function getUnlockedLevels(studentId: string) {
   const multiplication = await checkProgressForOp(OperationType.MULTIPLICATION);
   const division = await checkProgressForOp(OperationType.DIVISION);
 
-  return { multiplication, division };
+  // Fetch teacher settings for the student
+  const student = await prisma.student.findUnique({
+    where: { id: studentId },
+    select: { teacherId: true },
+  });
+
+  let settings = null;
+  if (student?.teacherId) {
+    settings = await prisma.teacherSetting.findUnique({
+      where: { teacherId: student.teacherId },
+    });
+  }
+
+  if (!settings) {
+    settings = {
+      id: '',
+      teacherId: student?.teacherId || '',
+      preTestLimitMult: 10,
+      preTestLimitDiv: 10,
+      practiceLimitMult: 10,
+      practiceLimitDiv: 10,
+      postTestLimitMult: 10,
+      postTestLimitDiv: 10,
+      preTestTimeMult: 5,
+      preTestTimeDiv: 5,
+      practiceTimeMult: 0,
+      practiceTimeDiv: 0,
+      postTestTimeMult: 5,
+      postTestTimeDiv: 5,
+    } as any;
+  }
+
+  return { multiplication, division, settings };
 }

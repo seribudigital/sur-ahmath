@@ -45,6 +45,7 @@ function PracticeInterfaceContent() {
   const [level, setLevel] = useState<'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' | 'EXPERT'>('BEGINNER');
   const [practiceMode, setPracticeMode] = useState<'FLASH_DRILL' | 'MISSING_NUMBER'>('FLASH_DRILL');
   const [limit, setLimit] = useState(10);
+  const [settings, setSettings] = useState<any>(null);
   
   // 2. Active Session States
   const [loading, setLoading] = useState(false);
@@ -85,6 +86,9 @@ function PracticeInterfaceContent() {
       const data = await res.json();
       if (res.ok && data.progress) {
         setLevelProgress(data.progress);
+      }
+      if (res.ok && data.settings) {
+        setSettings(data.settings);
       }
     } catch (err) {
       console.error('Failed to fetch level progress:', err);
@@ -155,10 +159,23 @@ function PracticeInterfaceContent() {
   useEffect(() => {
     if (examType) {
       setLevel('EXPERT');
-      setLimit(10); // Locking to 10 questions for testing/trial (production will be 50)
       setPracticeMode('FLASH_DRILL');
     }
   }, [examType]);
+
+  // Synchronize question limit from settings
+  useEffect(() => {
+    if (settings) {
+      const isMult = operationType === 'MULTIPLICATION';
+      if (examType === 'DIAGNOSTIC') {
+        setLimit(isMult ? settings.preTestLimitMult : settings.preTestLimitDiv);
+      } else if (examType === 'POST_TEST') {
+        setLimit(isMult ? settings.postTestLimitMult : settings.postTestLimitDiv);
+      } else {
+        setLimit(isMult ? settings.practiceLimitMult : settings.practiceLimitDiv);
+      }
+    }
+  }, [settings, operationType, examType]);
 
   // Clean timer on unmount
   useEffect(() => {
@@ -244,8 +261,8 @@ function PracticeInterfaceContent() {
     }
   };
 
-  // Handle question timeout (5 seconds limit in Exam Mode)
-  const handleTimeout = () => {
+  // Handle question timeout
+  const handleTimeout = (limitMs: number) => {
     if (feedback !== null) return; // already answered
     if (timerRef.current) clearInterval(timerRef.current);
     
@@ -264,7 +281,7 @@ function PracticeInterfaceContent() {
         operand1: question.operand1,
         operand2: question.operand2,
         userAnswer: -999, // timeout/unanswered
-        responseTime: 5000,
+        responseTime: limitMs,
       }),
     }).catch(err => console.error(err));
 
@@ -274,7 +291,7 @@ function PracticeInterfaceContent() {
         q: question,
         userVal: -999,
         correct: false,
-        time: 5000,
+        time: limitMs,
       },
     ]);
 
@@ -291,13 +308,28 @@ function PracticeInterfaceContent() {
     setTimerMs(0);
     startTimeRef.current = performance.now();
 
+    // Determine active time limit from settings (converting seconds to ms)
+    let activeTimeLimit = 0;
+    if (settings) {
+      const isMult = operationType === 'MULTIPLICATION';
+      if (examType === 'DIAGNOSTIC') {
+        activeTimeLimit = (isMult ? settings.preTestTimeMult : settings.preTestTimeDiv) * 1000;
+      } else if (examType === 'POST_TEST') {
+        activeTimeLimit = (isMult ? settings.postTestTimeMult : settings.postTestTimeDiv) * 1000;
+      } else {
+        activeTimeLimit = (isMult ? settings.practiceTimeMult : settings.practiceTimeDiv) * 1000;
+      }
+    } else {
+      activeTimeLimit = examType ? 5000 : 0;
+    }
+
     timerRef.current = setInterval(() => {
       const elapsed = Math.round(performance.now() - startTimeRef.current);
       setTimerMs(elapsed);
 
-      // Check if time limit is reached for Exam Mode
-      if (examType && elapsed >= 5000) {
-        handleTimeout();
+      // Check if time limit is reached
+      if (activeTimeLimit > 0 && elapsed >= activeTimeLimit) {
+        handleTimeout(activeTimeLimit);
       }
     }, 50); // update every 50ms for smooth live updates
   };
@@ -677,53 +709,6 @@ function PracticeInterfaceContent() {
                           </button>
                         );
                       })}
-                    </div>
-                  </div>
-
-                  {/* Practice Mode Selection */}
-                  <div>
-                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-2">Jenis Latihan</label>
-                    <div className="grid grid-cols-2 gap-3">
-                      <button
-                        onClick={() => setPracticeMode('FLASH_DRILL')}
-                        className={`p-3.5 rounded-xl border text-center transition-all ${
-                          practiceMode === 'FLASH_DRILL'
-                            ? 'border-teal-500 bg-teal-50 text-teal-700 font-bold'
-                            : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                        }`}
-                      >
-                        Flash Drill (A × B = ?)
-                      </button>
-                      <button
-                        onClick={() => setPracticeMode('MISSING_NUMBER')}
-                        className={`p-3.5 rounded-xl border text-center transition-all ${
-                          practiceMode === 'MISSING_NUMBER'
-                            ? 'border-teal-500 bg-teal-50 text-teal-700 font-bold'
-                            : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                        }`}
-                      >
-                        Missing Number (A × ▢ = C)
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Limit Selection */}
-                  <div>
-                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-2">Jumlah Soal</label>
-                    <div className="flex space-x-3">
-                      {[10, 15, 20].map((num) => (
-                        <button
-                          key={num}
-                          onClick={() => setLimit(num)}
-                          className={`px-4 py-2 rounded-lg border transition-all text-sm font-bold ${
-                            limit === num
-                              ? 'border-teal-500 bg-teal-50 text-teal-700'
-                              : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                          }`}
-                        >
-                          {num} Soal
-                        </button>
-                      ))}
                     </div>
                   </div>
                 </>
