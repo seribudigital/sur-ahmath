@@ -1,0 +1,171 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  ADMIN
+  TEACHER
+  STUDENT
+  PARENT
+}
+
+enum OperationType {
+  MULTIPLICATION
+  DIVISION
+}
+
+enum ExamType {
+  DIAGNOSTIC
+  WEEKLY
+  MONTHLY
+  MASTERY
+  POST_TEST
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  role         Role     @default(STUDENT)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  student Student?
+  parent  Parent?
+  teacher Teacher?
+
+  @@map("users")
+}
+
+model Teacher {
+  id        String   @id @default(uuid())
+  userId    String   @unique @map("user_id")
+  nama      String
+  school    String // Guru belongs to a school
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  students Student[] // Relation: Guru manages these students
+
+  @@map("teachers")
+}
+
+model Parent {
+  id          String   @id @default(uuid())
+  userId      String?  @unique @map("user_id") // Optional login (can access passwordless)
+  nama        String
+  kontak      String
+  uniqueToken String   @unique @map("unique_token") // Unique passwordless login token for WhatsApp/Email
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user     User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  students Student[]
+
+  @@map("parents")
+}
+
+model Student {
+  id             String            @id @default(uuid())
+  userId         String            @unique @map("user_id")
+  nama           String
+  kelas          String
+  school         String
+  parentId       String?           @map("parent_id")
+  teacherId      String?           @map("teacher_id")
+  examRequested  Boolean           @default(false) @map("exam_requested")
+  examUnlocked   Boolean           @default(false) @map("exam_unlocked")
+  createdAt      DateTime          @default(now()) @map("created_at")
+  updatedAt      DateTime          @updatedAt @map("updated_at")
+
+  // Relations
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent           Parent?           @relation(fields: [parentId], references: [id], onDelete: SetNull)
+  teacher          Teacher?          @relation(fields: [teacherId], references: [id], onDelete: SetNull)
+  practiceSessions PracticeSession[]
+  exams            Exam[]
+  reports          Report[]
+
+  @@map("students")
+}
+
+model PracticeSession {
+  id             String        @id @default(uuid())
+  studentId      String        @map("student_id")
+  operationType  OperationType @map("operation_type")
+  level          String?       @map("level")
+  date           DateTime      @default(now())
+  duration       Int // Duration of session in seconds
+  totalQuestions Int           @map("total_questions")
+  correctAnswers Int           @map("correct_answers")
+  createdAt      DateTime      @default(now()) @map("created_at")
+
+  // Relations
+  student      Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  questionLogs QuestionLog[]
+
+  @@map("practice_sessions")
+}
+
+model QuestionLog {
+  id            String        @id @default(uuid())
+  sessionId     String        @map("session_id")
+  operationType OperationType @map("operation_type")
+  operand1      Int           @map("operand_1")
+  operand2      Int           @map("operand_2")
+  userAnswer    Int           @map("user_answer")
+  correct       Boolean
+  responseTime  Int           @map("response_time") // Response time in milliseconds
+  createdAt     DateTime      @default(now()) @map("created_at")
+
+  // Relations
+  session PracticeSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  // Indexes to optimize querying for the 10x10 Mastery Heatmap
+  @@index([operand1, operand2])
+  @@index([sessionId, correct])
+  @@map("question_logs")
+}
+
+model Exam {
+  id             String        @id @default(uuid())
+  studentId      String        @map("student_id")
+  examType       ExamType      @map("exam_type")
+  operationType  OperationType @map("operation_type")
+  score          Float // Score percentage (0.0 to 100.0)
+  statusRemedial Boolean       @default(false) @map("status_remedial")
+  date           DateTime      @default(now())
+  verifiedByGuru Boolean       @default(false) @map("verified_by_guru") // Master Exam verification by Guru
+  createdAt      DateTime      @default(now()) @map("created_at")
+
+  // Relations
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@map("exams")
+}
+
+model Report {
+  id             String   @id @default(uuid())
+  studentId      String   @map("student_id")
+  period         String // E.g. "2026-W25" (weekly) or "2026-M06" (monthly)
+  accuracy       Float    @map("accuracy") // Overall accuracy percentage
+  speed          Float    @map("speed") // Average response time in seconds
+  activityScore  Float    @map("activity_score") // Computed activity score
+  teacherComment String?  @map("teacher_comment") // Comments added by Guru
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@map("reports")
+}
