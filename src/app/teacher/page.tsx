@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { 
   Users, 
@@ -71,7 +71,7 @@ const INITIAL_STUDENTS_LIST = [
   }
 ];
 
-export default function TeacherDashboard() {
+function TeacherDashboardContent() {
   const searchParams = useSearchParams();
   const teacherUserId = searchParams.get('userId') || DEFAULT_TEACHER_USER_ID;
 
@@ -593,3 +593,17 @@ export default function TeacherDashboard() {
     </div>
   );
 }
+
+export default function TeacherDashboard() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen w-full flex-col items-center justify-center bg-slate-50">
+        <Loader2 className="h-10 w-10 animate-spin text-teal-600" />
+        <p className="mt-4 text-sm font-semibold text-slate-600">Memuat Dashboard Guru...</p>
+      </div>
+    }>
+      <TeacherDashboardContent />
+    </Suspense>
+  );
+}
+

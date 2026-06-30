@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { 
   Target, 
@@ -172,7 +172,7 @@ const MOCK_EXAMS = [
   { id: '7', examType: 'DIAGNOSTIC', operationType: 'DIVISION', score: 72.0, verifiedByGuru: false, date: '2026-06-03' },
 ];
 
-export default function StudentDashboard() {
+function StudentDashboardContent() {
   const searchParams = useSearchParams();
   const studentId = searchParams.get('studentId');
 
@@ -804,3 +804,17 @@ export default function StudentDashboard() {
     </div>
   );
 }
+
+export default function StudentDashboard() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen w-full flex-col items-center justify-center bg-slate-50">
+        <Loader2 className="h-10 w-10 animate-spin text-teal-600" />
+        <p className="mt-4 text-sm font-semibold text-slate-600">Memuat Laporan Numerasi...</p>
+      </div>
+    }>
+      <StudentDashboardContent />
+    </Suspense>
+  );
+}
+

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { 
   ArrowLeft, 
@@ -30,7 +30,7 @@ interface Question {
   expectedAnswer: number;
 }
 
-export default function PracticeInterface() {
+function PracticeInterfaceContent() {
   const searchParams = useSearchParams();
   const queryStudentId = searchParams.get('studentId') || DEFAULT_STUDENT_ID;
   const examType = searchParams.get('examType'); // 'DIAGNOSTIC' or 'POST_TEST'
@@ -1094,3 +1094,16 @@ export default function PracticeInterface() {
     </div>
   );
 }
+
+export default function PracticeInterface() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen w-full flex-col items-center justify-center bg-slate-50">
+        <p className="text-sm font-semibold text-slate-600">Memuat Sesi Latihan...</p>
+      </div>
+    }>
+      <PracticeInterfaceContent />
+    </Suspense>
+  );
+}
+
