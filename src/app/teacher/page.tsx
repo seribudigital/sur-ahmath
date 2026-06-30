@@ -355,8 +355,7 @@ function TeacherDashboardContent() {
                     <tr className="bg-slate-50 border-y border-slate-100 text-xs font-extrabold uppercase text-slate-400 tracking-wider">
                       <th className="py-3 px-6">Nama Siswa</th>
                       <th className="py-3 px-6 text-center">Pre-Test (Rerata)</th>
-                      <th className="py-3 px-6">Post-Test (Perkalian)</th>
-                      <th className="py-3 px-6">Post-Test (Pembagian)</th>
+                      <th className="py-3 px-6">Post-Test (Riwayat)</th>
                       <th className="py-3 px-6 text-center">Status Ujian</th>
                       <th className="py-3 px-6 text-right">Tindakan</th>
                     </tr>
@@ -376,56 +375,60 @@ function TeacherDashboardContent() {
                             <div className="text-[10px] text-slate-400 mt-0.5">Aktif {student.lastActive}</div>
                           </td>
                           <td className="py-4 px-6 text-center">
-                            <div className="inline-flex flex-col text-xs space-y-0.5 text-left">
-                              <div className="flex items-center space-x-1.5 text-slate-600">
+                            <div className="inline-flex flex-col text-xs space-y-1.5 text-left">
+                              <div className="flex items-center space-x-1.5 text-slate-600 h-6">
                                 <span className="font-semibold w-5 text-center text-[10px]">✖️</span>
                                 <span className="font-bold text-slate-800">{student.preTestAvgMult !== null && student.preTestAvgMult !== undefined ? `${student.preTestAvgMult}%` : '-'}</span>
                               </div>
-                              <div className="flex items-center space-x-1.5 text-slate-600">
+                              <div className="flex items-center space-x-1.5 text-slate-600 h-6">
                                 <span className="font-semibold w-5 text-center text-[10px]">➗</span>
                                 <span className="font-bold text-slate-800">{student.preTestAvgDiv !== null && student.preTestAvgDiv !== undefined ? `${student.preTestAvgDiv}%` : '-'}</span>
                               </div>
                             </div>
                           </td>
                           <td className="py-4 px-6">
-                            {student.postTestsMult && student.postTestsMult.length > 0 ? (
-                              <div className="flex flex-wrap gap-1 max-w-[130px]">
-                                {student.postTestsMult.map((score: number, idx: number) => (
-                                  <span 
-                                    key={idx} 
-                                    className={`px-1.5 py-0.5 rounded text-[10px] font-black border ${
-                                      score >= 90 
-                                        ? 'bg-emerald-50 text-emerald-700 border-emerald-100' 
-                                        : 'bg-rose-50 text-rose-700 border-rose-100'
-                                    }`}
-                                  >
-                                    {score}%
-                                  </span>
-                                ))}
+                            <div className="inline-flex flex-col text-xs space-y-1.5 text-left justify-center">
+                              <div className="flex items-center h-6">
+                                {student.postTestsMult && student.postTestsMult.length > 0 ? (
+                                  <div className="flex flex-wrap gap-1 max-w-[180px]">
+                                    {student.postTestsMult.map((score: number, idx: number) => (
+                                      <span 
+                                        key={idx} 
+                                        className={`px-1.5 py-0.5 rounded text-[10px] font-black border ${
+                                          score >= 90 
+                                            ? 'bg-emerald-50 text-emerald-700 border-emerald-100' 
+                                            : 'bg-rose-50 text-rose-700 border-rose-100'
+                                        }`}
+                                      >
+                                        {score}%
+                                      </span>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <span className="text-slate-400 text-xs font-semibold">-</span>
+                                )}
                               </div>
-                            ) : (
-                              <span className="text-slate-400 text-xs font-semibold">-</span>
-                            )}
-                          </td>
-                          <td className="py-4 px-6">
-                            {student.postTestsDiv && student.postTestsDiv.length > 0 ? (
-                              <div className="flex flex-wrap gap-1 max-w-[130px]">
-                                {student.postTestsDiv.map((score: number, idx: number) => (
-                                  <span 
-                                    key={idx} 
-                                    className={`px-1.5 py-0.5 rounded text-[10px] font-black border ${
-                                      score >= 90 
-                                        ? 'bg-emerald-50 text-emerald-700 border-emerald-100' 
-                                        : 'bg-rose-50 text-rose-700 border-rose-100'
-                                    }`}
-                                  >
-                                    {score}%
-                                  </span>
-                                ))}
+                              <div className="flex items-center h-6">
+                                {student.postTestsDiv && student.postTestsDiv.length > 0 ? (
+                                  <div className="flex flex-wrap gap-1 max-w-[180px]">
+                                    {student.postTestsDiv.map((score: number, idx: number) => (
+                                      <span 
+                                        key={idx} 
+                                        className={`px-1.5 py-0.5 rounded text-[10px] font-black border ${
+                                          score >= 90 
+                                            ? 'bg-emerald-50 text-emerald-700 border-emerald-100' 
+                                            : 'bg-rose-50 text-rose-700 border-rose-100'
+                                        }`}
+                                      >
+                                        {score}%
+                                      </span>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <span className="text-slate-400 text-xs font-semibold">-</span>
+                                )}
                               </div>
-                            ) : (
-                              <span className="text-slate-400 text-xs font-semibold">-</span>
-                            )}
+                            </div>
                           </td>
                           <td className="py-4 px-6 text-center">
                             <span className={`text-[10px] font-extrabold border px-2.5 py-0.5 rounded-full ${getExamBadgeClass(student.examStatus)}`}>
@@ -441,7 +444,7 @@ function TeacherDashboardContent() {
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={6} className="py-8 text-center text-sm text-slate-400 font-medium">
+                        <td colSpan={5} className="py-8 text-center text-sm text-slate-400 font-medium">
                           Siswa tidak ditemukan
                         </td>
                       </tr>
