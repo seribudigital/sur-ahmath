@@ -8,8 +8,24 @@ export async function POST(request: Request) {
 
     // A. Parent Token Login
     if (token) {
+      let tokenValue = token.trim();
+      if (tokenValue.includes('http://') || tokenValue.includes('https://') || tokenValue.includes('/raport/')) {
+        try {
+          const cleanUrl = tokenValue.split('?')[0];
+          const parts = cleanUrl.split('/raport/');
+          if (parts.length > 1) {
+            tokenValue = parts[parts.length - 1];
+          } else {
+            const slashParts = cleanUrl.split('/');
+            tokenValue = slashParts[slashParts.length - 1];
+          }
+        } catch (e) {
+          console.error('Failed to parse token URL:', e);
+        }
+      }
+
       const parent = await prisma.parent.findUnique({
-        where: { uniqueToken: token },
+        where: { uniqueToken: tokenValue },
         include: { students: true }
       });
       
