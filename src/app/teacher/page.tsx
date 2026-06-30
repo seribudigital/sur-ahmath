@@ -400,7 +400,7 @@ function TeacherDashboardContent() {
                                             : 'bg-rose-50 text-rose-700 border-rose-100'
                                         }`}
                                       >
-                                        {score}%
+                                        U{idx + 1}: {score}%
                                       </span>
                                     ))}
                                   </div>
@@ -420,7 +420,7 @@ function TeacherDashboardContent() {
                                             : 'bg-rose-50 text-rose-700 border-rose-100'
                                         }`}
                                       >
-                                        {score}%
+                                        U{idx + 1}: {score}%
                                       </span>
                                     ))}
                                   </div>
@@ -505,7 +505,7 @@ function TeacherDashboardContent() {
                                   : 'bg-rose-50 text-rose-700 border-rose-100'
                               }`}
                             >
-                              {score}%
+                              U{idx + 1}: {score}%
                             </span>
                           ))
                         ) : (
@@ -528,7 +528,7 @@ function TeacherDashboardContent() {
                                   : 'bg-rose-50 text-rose-700 border-rose-100'
                               }`}
                             >
-                              {score}%
+                              U{idx + 1}: {score}%
                             </span>
                           ))
                         ) : (
