@@ -38,7 +38,6 @@ async function main() {
         create: {
           nama: 'Pak Ahmad',
           kontak: '08123456789',
-          uniqueToken: 'mock-unique-token-xyz-123', // Token matching portal URLs
         }
       }
     },
@@ -61,6 +60,7 @@ async function main() {
           school: 'MTsN 1 Jakarta',
           teacherId: teacherId,
           parentId: parentId,
+          uniqueToken: 'mock-unique-token-xyz-123', // Token matching portal URLs
         }
       }
     },

@@ -1033,7 +1033,7 @@ function TeacherDashboardContent() {
                   <h5 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Link Akses Wali Murid</h5>
                   <p className="text-[10px] text-slate-500 leading-relaxed">Wali murid dapat memantau perkembangan belajar anak tanpa login melalui URL unik berikut:</p>
                   <div className="bg-white border border-slate-200 p-2 rounded text-[9px] font-mono text-teal-600 select-all overflow-hidden text-ellipsis whitespace-nowrap">
-                    http://surahmath.id/raport/mock-unique-token-xyz-123
+                    {`http://surahmath.id/raport/${selectedStudent.uniqueToken || 'mock-unique-token-xyz-123'}`}
                   </div>
                 </div>
 

@@ -128,7 +128,8 @@ export async function GET(request: Request) {
           preTestAvgMult,
           preTestAvgDiv,
           postTestsMult,
-          postTestsDiv
+          postTestsDiv,
+          uniqueToken: s.uniqueToken
         };
       });
 
@@ -144,19 +145,18 @@ export async function GET(request: Request) {
 
     // Resolve studentId from parentToken if provided
     if (parentToken) {
-      const parent = await prisma.parent.findUnique({
-        where: { uniqueToken: parentToken },
-        include: { students: true },
+      const studentRecord = await prisma.student.findUnique({
+        where: { uniqueToken: parentToken }
       });
 
-      if (!parent || parent.students.length === 0) {
+      if (!studentRecord) {
         return NextResponse.json(
-          { error: 'Invalid parent token or no students associated with this parent' },
+          { error: 'Invalid parent token' },
           { status: 404 }
         );
       }
 
-      studentId = parent.students[0].id;
+      studentId = studentRecord.id;
     }
 
     if (!studentId) {

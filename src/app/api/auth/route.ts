@@ -24,12 +24,12 @@ export async function POST(request: Request) {
         }
       }
 
-      const parent = await prisma.parent.findUnique({
+      const student = await prisma.student.findUnique({
         where: { uniqueToken: tokenValue },
-        include: { students: true }
+        include: { parent: true }
       });
       
-      if (!parent) {
+      if (!student) {
         return NextResponse.json(
           { error: 'Token wali murid tidak valid' },
           { status: 400 }
@@ -38,9 +38,9 @@ export async function POST(request: Request) {
       
       return NextResponse.json({
         role: 'PARENT',
-        token: parent.uniqueToken,
-        name: parent.nama,
-        studentId: parent.students[0]?.id || null
+        token: student.uniqueToken,
+        name: student.parent?.nama || 'Wali Murid',
+        studentId: student.id
       });
     }
 

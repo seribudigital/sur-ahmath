@@ -64,7 +64,6 @@ model Parent {
   userId      String?  @unique @map("user_id") // Optional login (can access passwordless)
   nama        String
   kontak      String
-  uniqueToken String   @unique @map("unique_token") // Unique passwordless login token for WhatsApp/Email
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
@@ -85,6 +84,7 @@ model Student {
   teacherId      String?           @map("teacher_id")
   examRequested  Boolean           @default(false) @map("exam_requested")
   examUnlocked   Boolean           @default(false) @map("exam_unlocked")
+  uniqueToken    String?           @unique @default(uuid()) @map("unique_token")
   createdAt      DateTime          @default(now()) @map("created_at")
   updatedAt      DateTime          @updatedAt @map("updated_at")
 
