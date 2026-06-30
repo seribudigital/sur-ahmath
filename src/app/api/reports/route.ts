@@ -72,23 +72,42 @@ export async function GET(request: Request) {
           accuracy = s.exams[0].score;
         }
 
-        let examStatus = 'LOCKED';
-        let examId = null;
+        // Calculate Pre-Test averages (DIAGNOSTIC)
+        const preTestsMult = s.exams.filter(e => e.examType === 'DIAGNOSTIC' && e.operationType === 'MULTIPLICATION');
+        const preTestsDiv = s.exams.filter(e => e.examType === 'DIAGNOSTIC' && e.operationType === 'DIVISION');
         
-        if (postTest) {
-          examId = postTest.id;
-          if (postTest.verifiedByGuru) {
-            examStatus = 'PASSED';
-          } else if (postTest.score >= 90.0) {
-            // Completed & passed, waiting for teacher approval
-            examStatus = 'NEEDS_VERIFICATION';
-          } else {
-            examStatus = 'REMEDIAL';
-          }
+        const preTestAvgMult = preTestsMult.length > 0
+          ? Math.round(preTestsMult.reduce((sum, e) => sum + e.score, 0) / preTestsMult.length)
+          : null;
+        const preTestAvgDiv = preTestsDiv.length > 0
+          ? Math.round(preTestsDiv.reduce((sum, e) => sum + e.score, 0) / preTestsDiv.length)
+          : null;
+
+        // Fetch all Post-Tests (POST_TEST) sorted chronologically
+        const postTestsMult = s.exams
+          .filter(e => e.examType === 'POST_TEST' && e.operationType === 'MULTIPLICATION')
+          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+          .map(e => e.score);
+
+        const postTestsDiv = s.exams
+          .filter(e => e.examType === 'POST_TEST' && e.operationType === 'DIVISION')
+          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+          .map(e => e.score);
+
+        let examStatus = 'LOCKED';
+        let examId = postTest ? postTest.id : null;
+        
+        if (postTest && postTest.verifiedByGuru) {
+          examStatus = 'PASSED';
+        } else if (postTest && postTest.score >= 90.0) {
+          // Completed & passed, waiting for teacher approval
+          examStatus = 'NEEDS_VERIFICATION';
         } else if (s.examUnlocked) {
           examStatus = 'UNLOCKED'; // unlocked by teacher, ready to take exam
         } else if (s.examRequested) {
           examStatus = 'REQUESTED'; // student has requested the exam
+        } else if (postTest) {
+          examStatus = 'REMEDIAL';
         }
 
         return {
@@ -105,7 +124,11 @@ export async function GET(request: Request) {
           comment: latestReport ? latestReport.teacherComment || '' : '',
           lastActive: latestPractice ? 'Baru-baru ini' : 'Belum aktif',
           examRequested: s.examRequested,
-          examUnlocked: s.examUnlocked
+          examUnlocked: s.examUnlocked,
+          preTestAvgMult,
+          preTestAvgDiv,
+          postTestsMult,
+          postTestsDiv
         };
       });
 

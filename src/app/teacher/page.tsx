@@ -354,9 +354,10 @@ function TeacherDashboardContent() {
                   <thead>
                     <tr className="bg-slate-50 border-y border-slate-100 text-xs font-extrabold uppercase text-slate-400 tracking-wider">
                       <th className="py-3 px-6">Nama Siswa</th>
-                      <th className="py-3 px-6">Akurasi</th>
-                      <th className="py-3 px-6">Kecepatan</th>
-                      <th className="py-3 px-6">Ujian Akhir Master</th>
+                      <th className="py-3 px-6 text-center">Pre-Test (Rerata)</th>
+                      <th className="py-3 px-6">Post-Test (Perkalian)</th>
+                      <th className="py-3 px-6">Post-Test (Pembagian)</th>
+                      <th className="py-3 px-6 text-center">Status Ujian</th>
                       <th className="py-3 px-6 text-right">Tindakan</th>
                     </tr>
                   </thead>
@@ -374,13 +375,59 @@ function TeacherDashboardContent() {
                             <div className="font-semibold text-slate-800">{student.nama}</div>
                             <div className="text-[10px] text-slate-400 mt-0.5">Aktif {student.lastActive}</div>
                           </td>
-                          <td className="py-4 px-6">
-                            <span className="font-bold text-slate-700">{student.accuracy.toFixed(1)}%</span>
+                          <td className="py-4 px-6 text-center">
+                            <div className="inline-flex flex-col text-xs space-y-0.5 text-left">
+                              <div className="flex items-center space-x-1.5 text-slate-600">
+                                <span className="font-semibold w-5 text-center text-[10px]">✖️</span>
+                                <span className="font-bold text-slate-800">{student.preTestAvgMult !== null && student.preTestAvgMult !== undefined ? `${student.preTestAvgMult}%` : '-'}</span>
+                              </div>
+                              <div className="flex items-center space-x-1.5 text-slate-600">
+                                <span className="font-semibold w-5 text-center text-[10px]">➗</span>
+                                <span className="font-bold text-slate-800">{student.preTestAvgDiv !== null && student.preTestAvgDiv !== undefined ? `${student.preTestAvgDiv}%` : '-'}</span>
+                              </div>
+                            </div>
                           </td>
-                          <td className="py-4 px-6 text-slate-600 font-medium">
-                            {student.speed.toFixed(1)}s
+                          <td className="py-4 px-6">
+                            {student.postTestsMult && student.postTestsMult.length > 0 ? (
+                              <div className="flex flex-wrap gap-1 max-w-[130px]">
+                                {student.postTestsMult.map((score: number, idx: number) => (
+                                  <span 
+                                    key={idx} 
+                                    className={`px-1.5 py-0.5 rounded text-[10px] font-black border ${
+                                      score >= 90 
+                                        ? 'bg-emerald-50 text-emerald-700 border-emerald-100' 
+                                        : 'bg-rose-50 text-rose-700 border-rose-100'
+                                    }`}
+                                  >
+                                    {score}%
+                                  </span>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-slate-400 text-xs font-semibold">-</span>
+                            )}
                           </td>
                           <td className="py-4 px-6">
+                            {student.postTestsDiv && student.postTestsDiv.length > 0 ? (
+                              <div className="flex flex-wrap gap-1 max-w-[130px]">
+                                {student.postTestsDiv.map((score: number, idx: number) => (
+                                  <span 
+                                    key={idx} 
+                                    className={`px-1.5 py-0.5 rounded text-[10px] font-black border ${
+                                      score >= 90 
+                                        ? 'bg-emerald-50 text-emerald-700 border-emerald-100' 
+                                        : 'bg-rose-50 text-rose-700 border-rose-100'
+                                    }`}
+                                  >
+                                    {score}%
+                                  </span>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-slate-400 text-xs font-semibold">-</span>
+                            )}
+                          </td>
+                          <td className="py-4 px-6 text-center">
                             <span className={`text-[10px] font-extrabold border px-2.5 py-0.5 rounded-full ${getExamBadgeClass(student.examStatus)}`}>
                               {getExamLabel(student.examStatus)}
                             </span>
@@ -394,7 +441,7 @@ function TeacherDashboardContent() {
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={5} className="py-8 text-center text-sm text-slate-400 font-medium">
+                        <td colSpan={6} className="py-8 text-center text-sm text-slate-400 font-medium">
                           Siswa tidak ditemukan
                         </td>
                       </tr>
@@ -423,12 +470,69 @@ function TeacherDashboardContent() {
                 {/* Visual statistics summary */}
                 <div className="grid grid-cols-2 gap-3 bg-slate-50 border border-slate-100 p-4 rounded-xl text-center">
                   <div>
-                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Rerata Akurasi</span>
-                    <span className="text-xl font-black text-slate-700 mt-0.5 block">{selectedStudent.accuracy.toFixed(1)}%</span>
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Rerata Pre-Test ✖️</span>
+                    <span className="text-xl font-black text-slate-700 mt-0.5 block">
+                      {selectedStudent.preTestAvgMult !== null && selectedStudent.preTestAvgMult !== undefined ? `${selectedStudent.preTestAvgMult}%` : '-'}
+                    </span>
                   </div>
                   <div>
-                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Kecepatan Respons</span>
-                    <span className="text-xl font-black text-slate-700 mt-0.5 block">{selectedStudent.speed.toFixed(1)}s</span>
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Rerata Pre-Test ➗</span>
+                    <span className="text-xl font-black text-slate-700 mt-0.5 block">
+                      {selectedStudent.preTestAvgDiv !== null && selectedStudent.preTestAvgDiv !== undefined ? `${selectedStudent.preTestAvgDiv}%` : '-'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Riwayat Post-Test */}
+                <div className="border border-slate-100 rounded-xl p-4 bg-white shadow-sm space-y-3">
+                  <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Riwayat Ujian Post-Test</h4>
+                  <div className="space-y-2 text-xs">
+                    <div className="flex justify-between items-center py-1 border-b border-slate-50">
+                      <span className="text-slate-500 font-medium flex items-center">
+                        <span className="mr-1 text-[10px]">✖️</span> Perkalian
+                      </span>
+                      <div className="flex flex-wrap gap-1 justify-end max-w-[150px]">
+                        {selectedStudent.postTestsMult && selectedStudent.postTestsMult.length > 0 ? (
+                          selectedStudent.postTestsMult.map((score: number, idx: number) => (
+                            <span 
+                              key={idx} 
+                              className={`px-1.5 py-0.5 rounded text-[10px] font-bold border ${
+                                score >= 90 
+                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-100' 
+                                  : 'bg-rose-50 text-rose-700 border-rose-100'
+                              }`}
+                            >
+                              {score}%
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-slate-400 font-semibold text-[10px]">-</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center py-1">
+                      <span className="text-slate-500 font-medium flex items-center">
+                        <span className="mr-1 text-[10px]">➗</span> Pembagian
+                      </span>
+                      <div className="flex flex-wrap gap-1 justify-end max-w-[150px]">
+                        {selectedStudent.postTestsDiv && selectedStudent.postTestsDiv.length > 0 ? (
+                          selectedStudent.postTestsDiv.map((score: number, idx: number) => (
+                            <span 
+                              key={idx} 
+                              className={`px-1.5 py-0.5 rounded text-[10px] font-bold border ${
+                                score >= 90 
+                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-100' 
+                                  : 'bg-rose-50 text-rose-700 border-rose-100'
+                              }`}
+                            >
+                              {score}%
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-slate-400 font-semibold text-[10px]">-</span>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
 
