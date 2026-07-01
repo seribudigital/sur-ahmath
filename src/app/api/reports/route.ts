@@ -30,6 +30,7 @@ export async function GET(request: Request) {
       const students = await prisma.student.findMany({
         where: { teacherId: teacher.id },
         include: {
+          user: true, // Fetch user to get email and password hash
           exams: {
             orderBy: { date: 'desc' },
           },
@@ -114,6 +115,8 @@ export async function GET(request: Request) {
           id: s.id,
           nama: s.nama,
           kelas: s.kelas,
+          email: s.user.email,
+          password: s.user.passwordHash,
           accuracy,
           speed,
           activeDays,
@@ -133,7 +136,7 @@ export async function GET(request: Request) {
         };
       });
 
-      return NextResponse.json({ students: roster });
+      return NextResponse.json({ teacher, students: roster });
     }
 
     if (!studentId && !parentToken) {

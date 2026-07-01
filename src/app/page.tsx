@@ -3,14 +3,8 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
-  Target, 
-  Zap, 
-  Users, 
-  FileText, 
-  BookOpen, 
   Award, 
   ChevronRight, 
-  TrendingUp,
   Lock,
   Mail,
   Key,
@@ -29,6 +23,15 @@ export default function Home() {
   const [token, setToken] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Registration Form States
+  const [isRegisterOpen, setIsRegisterOpen] = useState(false);
+  const [regNama, setRegNama] = useState('');
+  const [regKelas, setRegKelas] = useState('');
+  const [regPassword, setRegPassword] = useState('');
+  const [regLoading, setRegLoading] = useState(false);
+  const [regError, setRegError] = useState<string | null>(null);
+  const [regSuccess, setRegSuccess] = useState<any | null>(null);
 
   // Handle Submit Auth
   const handleLogin = async (e: React.FormEvent) => {
@@ -69,29 +72,47 @@ export default function Home() {
     }
   };
 
-  // Helper to fill in demo credentials automatically
-  const handleFillDemo = (type: 'student' | 'teacher' | 'parent' | 'student_empty') => {
-    setError(null);
-    if (type === 'student') {
-      setActiveTab('users');
-      setEmail('siswa.budi@sekolah.id');
-      setPassword('hashed_password_123');
-    } else if (type === 'student_empty') {
-      setActiveTab('users');
-      setEmail('siswa.kosong@sekolah.id');
-      setPassword('hashed_password_123');
-    } else if (type === 'teacher') {
-      setActiveTab('users');
-      setEmail('guru.fatimah@sekolah.id');
-      setPassword('hashed_password_123');
-    } else {
-      setActiveTab('parent');
-      setToken('mock-unique-token-xyz-123');
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setRegLoading(true);
+    setRegError(null);
+
+    if (regPassword.length < 6) {
+      setRegError('Kata sandi harus minimal 6 karakter.');
+      setRegLoading(false);
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nama: regNama, kelas: regKelas, password: regPassword })
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Gagal mendaftarkan siswa baru.');
+      }
+
+      setRegSuccess({
+        email: data.email,
+        password: regPassword,
+        kelas: regKelas
+      });
+      // Reset form fields
+      setRegNama('');
+      setRegKelas('');
+      setRegPassword('');
+    } catch (err: any) {
+      setRegError(err.message);
+    } finally {
+      setRegLoading(false);
     }
   };
 
   return (
-    <div className="relative z-0 min-h-screen bg-slate-950 text-white font-sans flex flex-col justify-between overflow-x-hidden">
+    <div className="relative z-0 min-h-screen bg-slate-955 text-white font-sans flex flex-col justify-between overflow-x-hidden">
       {/* Decorative gradient glowing circles */}
       <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-teal-500/10 rounded-full blur-[120px] -z-10" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-indigo-500/10 rounded-full blur-[120px] -z-10" />
@@ -106,7 +127,7 @@ export default function Home() {
             Sur'ah<span className="text-teal-400 font-black">Math</span>
           </span>
         </div>
-        <div className="text-xs font-semibold text-slate-500">
+        <div className="text-xs font-semibold text-slate-550">
           Versi Pengembangan v1.0.0
         </div>
       </header>
@@ -127,51 +148,6 @@ export default function Home() {
           <p className="text-slate-400 text-sm sm:text-base leading-relaxed">
             Platform latihan matematika terstruktur dan adaptif untuk siswa MTs dan MA. Menggunakan algoritma cerdas berbasis data histori latihan untuk melatih koordinat angka yang masih lemah.
           </p>
-
-          {/* Quick Demo Credentials Widget */}
-          <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-3.5 text-left">
-            <h4 className="text-xs font-bold text-slate-300 uppercase tracking-widest flex items-center">
-              <Key className="w-4 h-4 mr-2 text-teal-400" />
-              Gunakan Akun Uji Coba (Klik untuk Mengisi):
-            </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <button
-                onClick={() => handleFillDemo('student')}
-                className="p-3 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-left transition-all hover:scale-[1.02]"
-              >
-                <div className="text-[10px] font-extrabold text-teal-400 uppercase tracking-wider">Siswa (Ada Data)</div>
-                <div className="text-xs font-bold text-white mt-1">Budi Santoso</div>
-                <div className="text-[9px] text-slate-500 truncate mt-0.5">siswa.budi@sekolah.id</div>
-              </button>
-              
-              <button
-                onClick={() => handleFillDemo('student_empty')}
-                className="p-3 rounded-xl bg-slate-950 hover:bg-slate-800 border border-teal-850 hover:border-teal-500 text-left transition-all hover:scale-[1.02] border-dashed"
-              >
-                <div className="text-[10px] font-extrabold text-emerald-400 uppercase tracking-wider">Siswa (Dari Nol)</div>
-                <div className="text-xs font-bold text-white mt-1">Ahmad Fauzan</div>
-                <div className="text-[9px] text-slate-500 truncate mt-0.5">siswa.kosong@sekolah.id</div>
-              </button>
-
-              <button
-                onClick={() => handleFillDemo('teacher')}
-                className="p-3 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-left transition-all hover:scale-[1.02]"
-              >
-                <div className="text-[10px] font-extrabold text-indigo-400 uppercase tracking-wider">Guru</div>
-                <div className="text-xs font-bold text-white mt-1">Ibu Fatimah</div>
-                <div className="text-[9px] text-slate-500 truncate mt-0.5">guru.fatimah@sekolah.id</div>
-              </button>
-
-              <button
-                onClick={() => handleFillDemo('parent')}
-                className="p-3 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-left transition-all hover:scale-[1.02]"
-              >
-                <div className="text-[10px] font-extrabold text-amber-400 uppercase tracking-wider">Wali Murid</div>
-                <div className="text-xs font-bold text-white mt-1">Pak Ahmad</div>
-                <div className="text-[9px] text-slate-500 truncate mt-0.5">Token: mock-unique...</div>
-              </button>
-            </div>
-          </div>
         </div>
 
         {/* Right Side: Interactive Login Portal */}
@@ -272,7 +248,7 @@ export default function Home() {
                 )}
               </CardContent>
 
-              <CardFooter className="pt-2 pb-6">
+              <CardFooter className="pt-2 pb-6 flex flex-col items-center">
                 <button
                   type="submit"
                   disabled={loading}
@@ -290,117 +266,153 @@ export default function Home() {
                     </>
                   )}
                 </button>
+
+                {/* Registration Link */}
+                <div className="text-center text-xs text-slate-405 mt-4 w-full">
+                  Siswa baru?{' '}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsRegisterOpen(true);
+                      setRegSuccess(null);
+                      setRegError(null);
+                    }}
+                    className="text-teal-400 font-bold hover:underline focus:outline-none bg-transparent border-0 cursor-pointer"
+                  >
+                    Daftar sebagai Siswa Baru
+                  </button>
+                </div>
               </CardFooter>
             </form>
           </Card>
         </div>
       </main>
 
-      {/* Sandbox Demo Quick Gateway Container */}
-      <section className="bg-slate-900/30 border-t border-slate-900 py-12 px-6">
-        <div className="max-w-5xl mx-auto space-y-6">
-          <div className="text-center sm:text-left">
-            <h3 className="text-lg font-bold text-white flex items-center justify-center sm:justify-start">
-              <Zap className="w-4 h-4 mr-2 text-teal-400" />
-              Sandbox / Akses Cepat Demo
-            </h3>
-            <p className="text-slate-400 text-xs mt-1">
-              Gunakan menu pintas di bawah ini untuk menguji setiap dashboard langsung tanpa proses pengetikan login (Fitur Evaluasi & Demo).
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Practice Card */}
-            <a 
-              href="/practice" 
-              className="p-5 rounded-2xl bg-slate-950/40 border border-slate-900 hover:border-teal-500/40 hover:bg-slate-900/60 transition-all group flex flex-col justify-between hover:-translate-y-0.5 relative"
-            >
-              <div className="absolute top-0 left-0 w-full h-[2.5px] bg-teal-500 rounded-t-2xl" />
-              <div>
-                <div className="p-2 w-fit rounded-lg bg-teal-500/10 text-teal-400 mb-3 group-hover:scale-105 transition-transform">
-                  <BookOpen className="w-5 h-5" />
-                </div>
-                <h4 className="font-bold text-sm text-white mb-1">Latihan Mandiri</h4>
-                <p className="text-slate-500 text-[10px] leading-relaxed">
-                  Asah hitungan perkalian & pembagian siswa adaptif.
-                </p>
-              </div>
-              <div className="mt-4 flex items-center text-[10px] font-bold text-teal-400 group-hover:text-teal-300">
-                <span>Mulai</span>
-                <ChevronRight className="w-3 h-3 ml-0.5" />
-              </div>
-            </a>
-
-            {/* Student Dashboard Card */}
-            <a 
-              href="/dashboard?studentId=6c49c487-0a33-4815-bb32-112b76bee827" 
-              className="p-5 rounded-2xl bg-slate-950/40 border border-slate-900 hover:border-teal-500/40 hover:bg-slate-900/60 transition-all group flex flex-col justify-between hover:-translate-y-0.5 relative"
-            >
-              <div className="absolute top-0 left-0 w-full h-[2.5px] bg-gradient-to-r from-teal-500 to-indigo-500 rounded-t-2xl" />
-              <div>
-                <div className="p-2 w-fit rounded-lg bg-teal-500/10 text-teal-400 mb-3 group-hover:scale-105 transition-transform">
-                  <TrendingUp className="w-5 h-5" />
-                </div>
-                <h4 className="font-bold text-sm text-white mb-1">Dashboard Siswa</h4>
-                <p className="text-slate-500 text-[10px] leading-relaxed">
-                  Tinjau heatmap 10x10 & diagram progres akurasi.
-                </p>
-              </div>
-              <div className="mt-4 flex items-center text-[10px] font-bold text-teal-400 group-hover:text-teal-300">
-                <span>Dashboard</span>
-                <ChevronRight className="w-3 h-3 ml-0.5" />
-              </div>
-            </a>
-
-            {/* Teacher Dashboard Card */}
-            <a 
-              href="/teacher?userId=teacher-user-id-xyz" 
-              className="p-5 rounded-2xl bg-slate-950/40 border border-slate-900 hover:border-indigo-500/40 hover:bg-slate-900/60 transition-all group flex flex-col justify-between hover:-translate-y-0.5 relative"
-            >
-              <div className="absolute top-0 left-0 w-full h-[2.5px] bg-indigo-500 rounded-t-2xl" />
-              <div>
-                <div className="p-2 w-fit rounded-lg bg-indigo-500/10 text-indigo-400 mb-3 group-hover:scale-105 transition-transform">
-                  <Users className="w-5 h-5" />
-                </div>
-                <h4 className="font-bold text-sm text-white mb-1">Dashboard Guru</h4>
-                <p className="text-slate-500 text-[10px] leading-relaxed">
-                  Evaluasi komentar, roster kelas & otorisasi ujian.
-                </p>
-              </div>
-              <div className="mt-4 flex items-center text-[10px] font-bold text-indigo-400 group-hover:text-indigo-300">
-                <span>Akses Guru</span>
-                <ChevronRight className="w-3 h-3 ml-0.5" />
-              </div>
-            </a>
-
-            {/* Parent Portal Card */}
-            <a 
-              href="/raport/mock-unique-token-xyz-123" 
-              className="p-5 rounded-2xl bg-slate-950/40 border border-slate-900 hover:border-amber-500/40 hover:bg-slate-900/60 transition-all group flex flex-col justify-between hover:-translate-y-0.5 relative"
-            >
-              <div className="absolute top-0 left-0 w-full h-[2.5px] bg-amber-500 rounded-t-2xl" />
-              <div>
-                <div className="p-2 w-fit rounded-lg bg-amber-500/10 text-amber-400 mb-3 group-hover:scale-105 transition-transform">
-                  <FileText className="w-5 h-5" />
-                </div>
-                <h4 className="font-bold text-sm text-white mb-1">Raport Wali Murid</h4>
-                <p className="text-slate-500 text-[10px] leading-relaxed">
-                  Format cetak raport A4 tervalidasi tanda tangan.
-                </p>
-              </div>
-              <div className="mt-4 flex items-center text-[10px] font-bold text-amber-400 group-hover:text-amber-300">
-                <span>Raport</span>
-                <ChevronRight className="w-3 h-3 ml-0.5" />
-              </div>
-            </a>
-          </div>
-        </div>
-      </section>
-
       {/* Footer */}
       <footer className="max-w-7xl mx-auto w-full px-6 py-6 text-center text-slate-600 text-xs border-t border-slate-900">
         © 2026 Sur'ahMath. Proyek Latihan Numerasi Terstruktur MTs & MA.
       </footer>
+
+      {/* Registration Modal */}
+      {isRegisterOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4 text-slate-800">
+          <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl relative overflow-hidden text-left">
+            <div className="absolute top-0 left-0 w-full h-[4px] bg-gradient-to-r from-teal-500 to-indigo-500" />
+            
+            <div className="p-6">
+              <h3 className="text-xl font-black text-white">Daftar Siswa Baru</h3>
+              <p className="text-slate-400 text-xs mt-1">Lengkapi data di bawah ini untuk membuat akun latihan baru</p>
+              
+              {regSuccess ? (
+                <div className="mt-6 space-y-4">
+                  <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs font-medium space-y-2">
+                    <div className="font-bold text-sm text-emerald-400">Pendaftaran Berhasil! 🎉</div>
+                    <p className="text-slate-300">Akun latihan matematika Anda berhasil dibuat. Silakan gunakan detail berikut untuk masuk:</p>
+                    <div className="bg-slate-950 p-3 rounded-lg border border-slate-850 space-y-1.5 font-mono text-[11px] text-white select-all">
+                      <div>Email: <span className="text-teal-400 font-bold">{regSuccess.email}</span></div>
+                      <div>Sandi: <span className="text-teal-400 font-bold">{regSuccess.password}</span></div>
+                      <div>Kelas: <span className="text-slate-300 font-bold">{regSuccess.kelas}</span></div>
+                    </div>
+                    <p className="text-[10px] text-slate-400">* Silakan salin atau catat alamat email di atas untuk login.</p>
+                  </div>
+                  
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsRegisterOpen(false);
+                      setRegSuccess(null);
+                      setEmail(regSuccess.email); // Auto-fill email
+                      setPassword(regSuccess.password); // Auto-fill password
+                    }}
+                    className="w-full py-2.5 bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 text-white text-xs font-extrabold rounded-xl transition-all shadow-lg hover:shadow-teal-500/25"
+                  >
+                    Masuk Sekarang
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handleRegister} className="mt-5 space-y-4">
+                  {regError && (
+                    <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-450 text-xs font-semibold flex items-start space-x-2">
+                      <AlertCircle className="w-4 h-4 mr-1 flex-shrink-0 mt-0.5 text-rose-400" />
+                      <span>{regError}</span>
+                    </div>
+                  )}
+
+                  {/* Nama Lengkap */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Nama Lengkap</label>
+                    <input
+                      type="text"
+                      required
+                      value={regNama}
+                      onChange={(e) => setRegNama(e.target.value)}
+                      placeholder="Contoh: Ahmad Fauzan"
+                      className="w-full px-4 py-3 bg-slate-950/50 border border-slate-800 rounded-xl text-sm focus:outline-none focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 text-white placeholder-slate-600 transition-all"
+                    />
+                  </div>
+
+                  {/* Kelas Dropdown */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Kelas</label>
+                    <div className="relative">
+                      <select
+                        required
+                        value={regKelas}
+                        onChange={(e) => setRegKelas(e.target.value)}
+                        className="w-full px-4 py-3 bg-slate-950/50 border border-slate-800 rounded-xl text-sm focus:outline-none focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 text-white transition-all appearance-none cursor-pointer"
+                        style={{
+                          backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>")`,
+                          backgroundRepeat: 'no-repeat',
+                          backgroundPosition: 'right 16px center',
+                          backgroundSize: '16px'
+                        }}
+                      >
+                        <option value="" disabled className="bg-slate-950 text-slate-500">Pilih Kelas</option>
+                        {['7A', '7B', '7C', '8A', '8B', '8C', '9A', '9B', '10', '11', '12'].map((kls) => (
+                          <option key={kls} value={kls} className="bg-slate-950 text-white">Kelas {kls}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Password */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Kata Sandi (Password)</label>
+                    <input
+                      type="password"
+                      required
+                      value={regPassword}
+                      onChange={(e) => setRegPassword(e.target.value)}
+                      placeholder="Minimal 6 karakter"
+                      className="w-full px-4 py-3 bg-slate-950/50 border border-slate-800 rounded-xl text-sm focus:outline-none focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 text-white placeholder-slate-600 transition-all"
+                    />
+                  </div>
+
+                  <div className="flex space-x-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsRegisterOpen(false);
+                        setRegError(null);
+                      }}
+                      className="flex-1 py-2.5 border border-slate-850 hover:border-slate-700 text-slate-300 hover:text-white text-xs font-extrabold rounded-xl transition-all"
+                    >
+                      Batal
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={regLoading}
+                      className="flex-1 py-2.5 bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 text-white text-xs font-extrabold rounded-xl transition-all shadow-lg disabled:opacity-50"
+                    >
+                      {regLoading ? 'Mendaftarkan...' : 'Daftar Sekarang'}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -17,7 +17,8 @@ import {
   Loader2,
   Save,
   Check,
-  ArrowLeft
+  ArrowLeft,
+  Trash2
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { formatDate } from '@/lib/utils';
@@ -79,6 +80,8 @@ function TeacherDashboardContent() {
   const [students, setStudents] = useState<any[]>([]);
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [teacher, setTeacher] = useState<any>(null);
+  const [classFilter, setClassFilter] = useState<string>('ALL');
   
   // Comment editing state
   const [activeComment, setActiveComment] = useState('');
@@ -183,6 +186,9 @@ function TeacherDashboardContent() {
     fetch(`/api/reports?teacherUserId=${teacherUserId}`)
       .then((res) => res.json())
       .then((data) => {
+        if (data.teacher) {
+          setTeacher(data.teacher);
+        }
         if (data.students) {
           setStudents(data.students);
           if (data.students.length > 0) {
@@ -193,6 +199,37 @@ function TeacherDashboardContent() {
       .catch((err) => console.error('Failed to fetch students roster:', err))
       .finally(() => setLoading(false));
   }, [teacherUserId]);
+
+  const handleDeleteStudent = async (studentId: string, nama: string) => {
+    const confirmDelete = window.confirm(`Apakah Anda yakin ingin menghapus akun siswa "${nama}" secara permanen? Semua data latihan, nilai ujian, dan raportnya juga akan terhapus.`);
+    if (!confirmDelete) return;
+
+    try {
+      const response = await fetch(`/api/students/${studentId}`, {
+        method: 'DELETE'
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Gagal menghapus siswa');
+      }
+
+      alert(`Akun siswa "${nama}" berhasil dihapus.`);
+      
+      // Refresh list locally
+      setStudents(prev => {
+        const updated = prev.filter(s => s.id !== studentId);
+        // If the deleted student was selected, select the first one of the remaining, or null
+        if (selectedStudentId === studentId) {
+          setSelectedStudentId(updated.length > 0 ? updated[0].id : null);
+        }
+        return updated;
+      });
+    } catch (err: any) {
+      console.error('Failed to delete student:', err);
+      alert(`Gagal menghapus siswa: ${err.message}`);
+    }
+  };
 
   // Selected Student Details
   const selectedStudent = students.find(s => s.id === selectedStudentId) || students[0] || null;
@@ -205,11 +242,12 @@ function TeacherDashboardContent() {
     }
   }, [selectedStudentId, selectedStudent]);
 
-  // Filter students based on search query
-  const filteredStudents = students.filter(s => 
-    s.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    s.kelas.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Filter students based on search query and class filter
+  const filteredStudents = students.filter(s => {
+    const matchesSearch = s.nama.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesClass = classFilter === 'ALL' || s.kelas === classFilter;
+    return matchesSearch && matchesClass;
+  });
 
   // Handle saving teacher comment
   const handleSaveComment = async () => {
@@ -391,8 +429,12 @@ function TeacherDashboardContent() {
                 <span>•</span>
                 <span>Sur'ahMath</span>
               </div>
-              <h1 className="text-3xl font-extrabold text-white mt-1 tracking-tight">Ibu Fatimah, S.Pd.</h1>
-              <p className="text-slate-300 text-sm mt-1">Wali Kelas 7-A • MTsN 1 Jakarta</p>
+              <h1 className="text-3xl font-extrabold text-white mt-1 tracking-tight">
+                {teacher?.nama || 'ahmad novan, S.T'}
+              </h1>
+              <p className="text-slate-300 text-sm mt-1">
+                Guru Pengajar • {teacher?.school || 'MTsN 1 Jakarta'}
+              </p>
             </div>
           </div>
 
@@ -681,16 +723,30 @@ function TeacherDashboardContent() {
                 <CardDescription>Pilih siswa untuk mengedit catatan evaluasi dan memverifikasi ujian</CardDescription>
               </div>
 
-              {/* Search Bar */}
-              <div className="relative w-full sm:max-w-[240px]">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3.5" />
-                <input
-                  type="text"
-                  placeholder="Cari nama siswa..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500/10"
-                />
+              <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                {/* Class Filter */}
+                <select
+                  value={classFilter}
+                  onChange={(e) => setClassFilter(e.target.value)}
+                  className="px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500/10 bg-white font-semibold text-slate-700 cursor-pointer"
+                >
+                  <option value="ALL">Semua Kelas</option>
+                  {['7A', '7B', '7C', '8A', '8B', '8C', '9A', '9B', '10', '11', '12'].map((kls) => (
+                    <option key={kls} value={kls}>Kelas {kls}</option>
+                  ))}
+                </select>
+
+                {/* Search Bar */}
+                <div className="relative w-full sm:max-w-[240px]">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3.5" />
+                  <input
+                    type="text"
+                    placeholder="Cari nama siswa..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500/10"
+                  />
+                </div>
               </div>
             </CardHeader>
 
@@ -717,8 +773,12 @@ function TeacherDashboardContent() {
                           }`}
                         >
                           <td className="py-4 px-6">
-                            <div className="font-semibold text-slate-800">{student.nama}</div>
-                            <div className="text-[10px] text-slate-400 mt-0.5">Aktif {student.lastActive}</div>
+                            <div className="font-bold text-slate-800 flex items-center gap-1.5">{student.nama}</div>
+                            <div className="text-[10px] text-slate-500 mt-1 space-y-0.5">
+                              <div>Email: <span className="font-semibold text-slate-700 select-all">{student.email}</span></div>
+                              <div>Sandi: <span className="font-mono bg-slate-100 px-1 py-0.5 rounded text-slate-700 select-all">{student.password}</span></div>
+                            </div>
+                            <div className="text-[10px] text-slate-400 mt-1">Kelas {student.kelas} • {student.lastActive}</div>
                           </td>
                           <td className="py-4 px-6 text-center">
                             <div className="inline-flex flex-col text-xs space-y-1.5 text-left">
@@ -782,9 +842,21 @@ function TeacherDashboardContent() {
                             </span>
                           </td>
                           <td className="py-4 px-6 text-right">
-                            <button className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
-                              <ChevronRight className="w-4 h-4" />
-                            </button>
+                            <div className="flex items-center justify-end space-x-2">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteStudent(student.id, student.nama);
+                                }}
+                                className="p-1.5 rounded-lg text-rose-500 hover:text-rose-700 hover:bg-rose-50 transition-colors"
+                                title="Hapus Akun Siswa"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                              <button className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
+                                <ChevronRight className="w-4 h-4" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))
@@ -829,6 +901,25 @@ function TeacherDashboardContent() {
                     <span className="text-xl font-black text-slate-700 mt-0.5 block">
                       {selectedStudent.preTestAvgDiv !== null && selectedStudent.preTestAvgDiv !== undefined ? `${selectedStudent.preTestAvgDiv}%` : '-'}
                     </span>
+                  </div>
+                </div>
+
+                {/* Student Account Details Card */}
+                <div className="border border-slate-100 rounded-xl p-4 bg-white shadow-sm space-y-2">
+                  <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Informasi Akun Siswa</h4>
+                  <div className="text-xs space-y-1.5 text-slate-700">
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-400">Email:</span>
+                      <span className="font-semibold select-all text-slate-850">{selectedStudent.email}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-400">Kata Sandi:</span>
+                      <span className="font-semibold font-mono bg-slate-100 px-1.5 py-0.5 rounded select-all text-slate-850">{selectedStudent.password}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-400">Kelas:</span>
+                      <span className="font-semibold text-slate-850">{selectedStudent.kelas}</span>
+                    </div>
                   </div>
                 </div>
 

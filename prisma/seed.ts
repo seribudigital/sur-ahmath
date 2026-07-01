@@ -12,13 +12,13 @@ async function main() {
   const teacherUser = await prisma.user.create({
     data: {
       id: 'teacher-user-id-xyz', // Static User ID matching default/mock
-      email: 'guru.fatimah@sekolah.id',
-      passwordHash: 'hashed_password_123', // Demo password
+      email: 'admin@surahmath.id',
+      passwordHash: 'Surahmath123',
       role: Role.TEACHER,
       teacher: {
         create: {
           id: 'teacher-id-xyz', // Static Teacher ID matching default/mock
-          nama: 'Ibu Fatimah, S.Pd.',
+          nama: 'ahmad novan, S.T',
           school: 'MTsN 1 Jakarta',
         }
       }
@@ -56,7 +56,7 @@ async function main() {
         create: {
           id: '6c49c487-0a33-4815-bb32-112b76bee827', // Matching default studentId
           nama: 'Budi Santoso',
-          kelas: '7-A',
+          kelas: '7A',
           school: 'MTsN 1 Jakarta',
           teacherId: teacherId,
           parentId: parentId,
@@ -164,7 +164,7 @@ async function main() {
         create: {
           id: 'f3cd48c5-5a33-4b3e-8492-14399a9f5454',
           nama: 'Ahmad Fauzan',
-          kelas: '7-A',
+          kelas: '7A',
           school: 'MTsN 1 Jakarta',
           teacherId: teacherId,
           parentId: parentId,
