@@ -1070,7 +1070,7 @@ function PracticeInterfaceContent() {
               )}
 
               {/* Expert Passed & Post-Test Prompt */}
-              {level === 'EXPERT' && levelProgress?.[pathKey]?.EXPERT?.progress?.passed && (
+              {!examType && level === 'EXPERT' && levelProgress?.[pathKey]?.EXPERT?.progress?.passed && (
                 <div className="p-5 bg-gradient-to-br from-indigo-950 to-slate-900 rounded-2xl text-white shadow-xl space-y-3.5 border border-indigo-500/30 relative overflow-hidden text-left">
                   <div className="absolute top-0 right-0 transform translate-x-3 -translate-y-3 text-indigo-500/10 text-8xl font-black select-none pointer-events-none">
                     📝
