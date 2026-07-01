@@ -17,7 +17,7 @@ import {
   Loader2,
   Save,
   Check,
-  ArrowLeft,
+  LogOut,
   Trash2
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
@@ -433,9 +433,10 @@ function TeacherDashboardContent() {
           <div className="flex items-center space-x-4">
             <a 
               href="/" 
-              className="p-2 rounded-lg bg-slate-800 text-slate-300 border border-slate-700 hover:text-white transition-all flex-shrink-0"
+              title="Keluar (Logout)"
+              className="p-2 rounded-lg bg-slate-800 text-slate-300 border border-slate-700 hover:text-white hover:bg-rose-950/30 hover:text-rose-450 hover:border-rose-900/50 transition-all flex-shrink-0"
             >
-              <ArrowLeft className="w-4 h-4" />
+              <LogOut className="w-4 h-4" />
             </a>
             <div>
               <div className="flex items-center space-x-2 text-teal-400 text-sm font-bold tracking-wider uppercase">

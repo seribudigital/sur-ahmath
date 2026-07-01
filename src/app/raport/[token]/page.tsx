@@ -11,7 +11,7 @@ import {
   Loader2, 
   TrendingUp, 
   ShieldCheck,
-  ArrowLeft
+  LogOut
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import MetricCard from '@/components/dashboard/MetricCard';
@@ -265,9 +265,10 @@ export default function ParentPortal({ params }: { params: React.Usable<{ token:
           <div className="flex items-center space-x-4">
             <a 
               href="/" 
-              className="no-print p-2 rounded-lg bg-slate-800 text-slate-300 border border-slate-700 hover:text-white transition-all flex-shrink-0"
+              title="Keluar (Logout)"
+              className="no-print p-2 rounded-lg bg-slate-800 text-slate-300 border border-slate-700 hover:text-white hover:bg-rose-950/30 hover:text-rose-450 hover:border-rose-900/50 transition-all flex-shrink-0"
             >
-              <ArrowLeft className="w-4 h-4" />
+              <LogOut className="w-4 h-4" />
             </a>
             <div>
               <div className="text-teal-400 print:text-slate-500 text-xs font-bold tracking-wider uppercase">

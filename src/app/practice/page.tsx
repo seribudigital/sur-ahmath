@@ -688,6 +688,7 @@ function PracticeInterfaceContent() {
           <div className="flex items-center space-x-3">
             <a 
               href={studentId ? `/dashboard?studentId=${studentId}` : '/'} 
+              title="Kembali ke Dashboard"
               className="p-2 rounded-lg bg-slate-800 text-slate-300 border border-slate-700 hover:text-white transition-all"
             >
               <ArrowLeft className="w-4 h-4" />
