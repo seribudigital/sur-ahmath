@@ -38,7 +38,9 @@ export async function GET(request: Request) {
           multiplication: progressData.multiplication,
           division: progressData.division
         },
-        settings: progressData.settings
+        settings: progressData.settings,
+        examRequested: progressData.examRequested,
+        examUnlocked: progressData.examUnlocked
       });
     }
 
@@ -398,7 +400,7 @@ async function getUnlockedLevels(studentId: string) {
   // Fetch teacher settings for the student
   const student = await prisma.student.findUnique({
     where: { id: studentId },
-    select: { teacherId: true },
+    select: { teacherId: true, examRequested: true, examUnlocked: true },
   });
 
   let settings = null;
@@ -427,5 +429,11 @@ async function getUnlockedLevels(studentId: string) {
     } as any;
   }
 
-  return { multiplication, division, settings };
+  return { 
+    multiplication, 
+    division, 
+    settings, 
+    examRequested: student?.examRequested ?? false, 
+    examUnlocked: student?.examUnlocked ?? false 
+  };
 }

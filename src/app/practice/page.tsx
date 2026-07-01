@@ -15,7 +15,8 @@ import {
   ChevronRight,
   TrendingUp,
   Award,
-  Lock
+  Lock,
+  Loader2
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { formatResponseTime } from '@/lib/utils';
@@ -79,6 +80,11 @@ function PracticeInterfaceContent() {
   // Level Lock/Unlock progress states
   const [levelProgress, setLevelProgress] = useState<any>(null);
   const [newLevelUnlockedName, setNewLevelUnlockedName] = useState<string | null>(null);
+  const [examRequested, setExamRequested] = useState(false);
+  const [examUnlocked, setExamUnlocked] = useState(false);
+  const [requestExamLoading, setRequestExamLoading] = useState(false);
+
+  const pathKey = operationType === 'MULTIPLICATION' ? 'multiplication' : 'division';
 
   const fetchProgress = async (isSessionCompletion = false) => {
     if (!studentId) return;
@@ -110,6 +116,10 @@ function PracticeInterfaceContent() {
       }
       if (res.ok && data.settings) {
         setSettings(data.settings);
+      }
+      if (res.ok) {
+        setExamRequested(data.examRequested ?? false);
+        setExamUnlocked(data.examUnlocked ?? false);
       }
     } catch (err) {
       console.error('Failed to fetch level progress:', err);
@@ -551,6 +561,30 @@ function PracticeInterfaceContent() {
     setSessionId(null);
   };
 
+  const handleRequestPostTest = async () => {
+    if (!studentId) return;
+    setRequestExamLoading(true);
+    try {
+      const res = await fetch('/api/exams', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ studentId, action: 'REQUEST_EXAM' }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setExamRequested(true);
+        alert('Permohonan Ujian Akhir Master berhasil dikirim! Silakan hubungi Guru Anda untuk mengaktifkan ujian.');
+      } else {
+        alert(data.error || 'Gagal mengajukan ujian.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Terjadi kesalahan koneksi saat mengajukan ujian.');
+    } finally {
+      setRequestExamLoading(false);
+    }
+  };
+
   // Helper to format live timer
   const formatLiveTimer = (ms: number): string => {
     const totalSeconds = ms / 1000;
@@ -986,6 +1020,50 @@ function PracticeInterfaceContent() {
                     </strong>
                     . Terus tingkatkan dan asah kemampuan berhitung Anda!
                   </p>
+                </div>
+              )}
+
+              {/* Expert Passed & Post-Test Prompt */}
+              {level === 'EXPERT' && levelProgress?.[pathKey]?.EXPERT?.progress?.passed && (
+                <div className="p-5 bg-gradient-to-br from-indigo-950 to-slate-900 rounded-2xl text-white shadow-xl space-y-3.5 border border-indigo-500/30 relative overflow-hidden text-left">
+                  <div className="absolute top-0 right-0 transform translate-x-3 -translate-y-3 text-indigo-500/10 text-8xl font-black select-none pointer-events-none">
+                    📝
+                  </div>
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xl">🎓</span>
+                      <span className="font-extrabold text-sm uppercase tracking-wider text-indigo-400">Selamat! Lulus Tingkat Expert</span>
+                    </div>
+                    <p className="text-xs text-slate-300 leading-relaxed mt-1">
+                      Anda telah menyelesaikan latihan tingkat **Expert** (Tabel 9-10) dengan rata-rata nilai kelulusan. Langkah berikutnya adalah mengambil Ujian Akhir Master resmi untuk diverifikasi oleh Guru.
+                    </p>
+                  </div>
+                  
+                  {examUnlocked ? (
+                    <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl text-xs font-bold flex items-center justify-center space-x-2">
+                      <span>✓ Ujian Akhir Master Telah Aktif! Silakan hubungi Guru Anda untuk mulai mengerjakan.</span>
+                    </div>
+                  ) : examRequested ? (
+                    <div className="p-3 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 rounded-xl text-xs font-bold flex items-center justify-center space-x-2">
+                      <span>⌛ Permohonan Ujian Telah Dikirim. Menunggu Guru Anda mengaktifkan ujian.</span>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={requestExamLoading}
+                      onClick={handleRequestPostTest}
+                      className="w-full py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-700 hover:to-indigo-600 disabled:opacity-50 text-white text-xs font-extrabold rounded-xl transition-all shadow-lg hover:shadow-indigo-500/25 flex items-center justify-center space-x-2 cursor-pointer border-0"
+                    >
+                      {requestExamLoading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+                          Memproses Pengajuan...
+                        </>
+                      ) : (
+                        <span>Ajukan Ujian Akhir Master ke Guru</span>
+                      )}
+                    </button>
+                  )}
                 </div>
               )}
 
