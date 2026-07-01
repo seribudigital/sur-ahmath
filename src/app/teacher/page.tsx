@@ -433,7 +433,7 @@ function TeacherDashboardContent() {
                 {teacher?.nama || 'ahmad novan, S.T'}
               </h1>
               <p className="text-slate-300 text-sm mt-1">
-                Guru Pengajar • {teacher?.school || 'MTsN 1 Jakarta'}
+                Guru Pengajar • {teacher?.school || 'MTs-MA Al-Khoir Cikande'}
               </p>
             </div>
           </div>

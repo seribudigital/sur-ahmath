@@ -19,7 +19,7 @@ async function main() {
         create: {
           id: 'teacher-id-xyz', // Static Teacher ID matching default/mock
           nama: 'ahmad novan, S.T',
-          school: 'MTsN 1 Jakarta',
+          school: 'MTs-MA Al-Khoir Cikande',
         }
       }
     },
@@ -49,7 +49,7 @@ async function main() {
   // 4. Create Student (Budi)
   const studentUser = await prisma.user.create({
     data: {
-      email: 'siswa.budi@sekolah.id',
+      email: 'siswa.budi@surahmath.id',
       passwordHash: 'hashed_password_123',
       role: Role.STUDENT,
       student: {
@@ -57,7 +57,7 @@ async function main() {
           id: '6c49c487-0a33-4815-bb32-112b76bee827', // Matching default studentId
           nama: 'Budi Santoso',
           kelas: '7A',
-          school: 'MTsN 1 Jakarta',
+          school: 'MTs-MA Al-Khoir Cikande',
           teacherId: teacherId,
           parentId: parentId,
           uniqueToken: 'mock-unique-token-xyz-123', // Token matching portal URLs
@@ -157,7 +157,7 @@ async function main() {
   const ahmadUser = await prisma.user.create({
     data: {
       id: '9837c5e3-47f5-4d86-adcb-9de02196ae36',
-      email: 'siswa.kosong@sekolah.id',
+      email: 'siswa.kosong@surahmath.id',
       passwordHash: 'hashed_password_123',
       role: Role.STUDENT,
       student: {
@@ -165,7 +165,7 @@ async function main() {
           id: 'f3cd48c5-5a33-4b3e-8492-14399a9f5454',
           nama: 'Ahmad Fauzan',
           kelas: '7A',
-          school: 'MTsN 1 Jakarta',
+          school: 'MTs-MA Al-Khoir Cikande',
           teacherId: teacherId,
           parentId: parentId,
           examRequested: true,

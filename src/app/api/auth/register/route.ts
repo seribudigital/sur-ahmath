@@ -33,14 +33,14 @@ export async function POST(request: Request) {
     // 2. Generate Unique Email
     const sanitizedName = nama.toLowerCase().replace(/[^a-z0-9]/g, '');
     let baseEmail = `siswa.${sanitizedName}`;
-    let email = `${baseEmail}@sekolah.id`;
+    let email = `${baseEmail}@surahmath.id`;
     let userExists = await prisma.user.findUnique({
       where: { email: email.toLowerCase() }
     });
 
     let suffix = 2;
     while (userExists) {
-      email = `${baseEmail}${suffix}@sekolah.id`;
+      email = `${baseEmail}${suffix}@surahmath.id`;
       userExists = await prisma.user.findUnique({
         where: { email: email.toLowerCase() }
       });
@@ -83,7 +83,7 @@ export async function POST(request: Request) {
           userId: user.id,
           nama: nama.trim(),
           kelas: kelas,
-          school: teacher.school || 'MTsN 1 Jakarta',
+          school: teacher.school || 'MTs-MA Al-Khoir Cikande',
           teacherId: teacher.id,
         }
       });

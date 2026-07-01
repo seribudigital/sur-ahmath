@@ -21,12 +21,12 @@ import { formatDate, formatResponseTime } from '@/lib/utils';
 // Fallback Mock Data matching the database test student
 const MOCK_STUDENT = {
   nama: 'Budi Santoso',
-  kelas: '7-A',
-  school: 'MTsN 1 Jakarta',
+  kelas: '7A',
+  school: 'MTs-MA Al-Khoir Cikande',
   predicate: 'Raja Perkalian',
   teacher: {
-    nama: 'Ibu Fatimah, S.Pd.',
-    school: 'MTsN 1 Jakarta',
+    nama: 'ahmad novan, S.T',
+    school: 'MTs-MA Al-Khoir Cikande',
   }
 };
 
