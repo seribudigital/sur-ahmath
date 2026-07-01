@@ -257,14 +257,16 @@ function PracticeInterfaceContent() {
     }
 
     if (examType === 'MONITORING') {
-      if (monitoringStage >= 5) {
+      const maxStages = settings?.monitoringStagesCount ?? 5;
+      const cooldownDays = settings?.monitoringCooldownDays ?? 7;
+      if (monitoringStage >= maxStages) {
         alert('Anda telah menyelesaikan seluruh Ujian Monitoring (True Master)!');
         return;
       }
       if (lastExamDate) {
         const lastExam = new Date(lastExamDate).getTime();
         const now = new Date().getTime();
-        const cooldownMs = 7 * 24 * 60 * 60 * 1000;
+        const cooldownMs = cooldownDays * 24 * 60 * 60 * 1000;
         if ((now - lastExam) < cooldownMs) {
           const remainingMs = cooldownMs - (now - lastExam);
           const remainingDays = Math.ceil(remainingMs / (24 * 60 * 60 * 1000));
@@ -696,7 +698,7 @@ function PracticeInterfaceContent() {
               </span>
               <h1 className="text-xl font-bold text-white">
                 {examType 
-                  ? `Ujian Resmi: ${examType === 'DIAGNOSTIC' ? 'Pre-Test (Diagnostik)' : examType === 'MONITORING' ? `Ujian Monitoring (Stage ${monitoringStage + 1}/5)` : 'Ujian Akhir Master'}` 
+                  ? `Ujian Resmi: ${examType === 'DIAGNOSTIC' ? 'Pre-Test (Diagnostik)' : examType === 'MONITORING' ? `Ujian Monitoring (Stage ${monitoringStage + 1}/${settings?.monitoringStagesCount ?? 5})` : 'Ujian Akhir Master'}` 
                   : 'Latihan Numerasi Mandiri'
                 }
               </h1>
@@ -712,7 +714,7 @@ function PracticeInterfaceContent() {
             <div className="h-2 bg-gradient-to-r from-teal-500 to-indigo-500" />
             <CardHeader>
               <CardTitle className="text-2xl text-slate-800 font-extrabold">
-                {examType === 'MONITORING' ? `Mulai Ujian Monitoring (Stage ${monitoringStage + 1}/5)` : examType ? 'Mulai Ujian Resmi' : 'Pengaturan Latihan'}
+                {examType === 'MONITORING' ? `Mulai Ujian Monitoring (Stage ${monitoringStage + 1}/${settings?.monitoringStagesCount ?? 5})` : examType ? 'Mulai Ujian Resmi' : 'Pengaturan Latihan'}
               </CardTitle>
               <CardDescription>
                 {examType 
@@ -846,10 +848,12 @@ function PracticeInterfaceContent() {
                 if (examType === 'POST_TEST') {
                   isLocked = !(levelProgress?.[pathKey]?.EXPERT?.unlocked ?? false);
                 } else if (examType === 'MONITORING') {
+                  const maxStages = settings?.monitoringStagesCount ?? 5;
+                  const cooldownDays = settings?.monitoringCooldownDays ?? 7;
                   const onCooldown = lastExamDate 
-                    ? (new Date().getTime() - new Date(lastExamDate).getTime()) < 7 * 24 * 60 * 60 * 1000
+                    ? (new Date().getTime() - new Date(lastExamDate).getTime()) < cooldownDays * 24 * 60 * 60 * 1000
                     : false;
-                  isLocked = monitoringStage >= 5 || onCooldown;
+                  isLocked = monitoringStage >= maxStages || onCooldown;
                 } else if (!examType) {
                   isLocked = !isSelectedLevelUnlocked;
                 }
@@ -875,7 +879,7 @@ function PracticeInterfaceContent() {
                         {examType === 'POST_TEST'
                           ? 'Selesaikan Semua Level Terlebih Dahulu'
                           : examType === 'MONITORING'
-                          ? (monitoringStage >= 5 ? 'Seluruh Tahap Monitoring Selesai' : 'Ujian Monitoring Terkunci (Cooldown)')
+                          ? (monitoringStage >= (settings?.monitoringStagesCount ?? 5) ? 'Seluruh Tahap Monitoring Selesai' : 'Ujian Monitoring Terkunci (Cooldown)')
                           : (levelProgress?.[pathKey]?.[level]?.needsPreTest 
                             ? 'Selesaikan Pre-Test Terlebih Dahulu' 
                             : 'Level Masih Terkunci')

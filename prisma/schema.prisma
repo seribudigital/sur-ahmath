@@ -194,6 +194,10 @@ model TeacherSetting {
   practiceTimeDiv     Int      @default(0)  @map("practice_time_div")
   postTestTimeMult    Int      @default(5)  @map("post_test_time_mult")
   postTestTimeDiv     Int      @default(5)  @map("post_test_time_div")
+  
+  // Monitoring Configs
+  monitoringCooldownDays Int   @default(7)  @map("monitoring_cooldown_days")
+  monitoringStagesCount  Int   @default(5)  @map("monitoring_stages_count")
 
   createdAt           DateTime @default(now()) @map("created_at")
   updatedAt           DateTime @updatedAt @map("updated_at")

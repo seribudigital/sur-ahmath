@@ -276,6 +276,21 @@ export async function GET(request: Request) {
       orderBy: { date: 'desc' },
     });
 
+    // Fetch teacher settings for the student
+    let settings = null;
+    if (student.teacherId) {
+      settings = await prisma.teacherSetting.findUnique({
+        where: { teacherId: student.teacherId },
+      });
+    }
+
+    if (!settings) {
+      settings = {
+        monitoringCooldownDays: 7,
+        monitoringStagesCount: 5,
+      } as any;
+    }
+
     return NextResponse.json({
       student: {
         id: student.id,
@@ -289,6 +304,10 @@ export async function GET(request: Request) {
         monitoringStage: student.monitoringStage,
         lastExamDate: student.lastExamDate,
         teacher: student.teacher ? { nama: student.teacher.nama, school: student.teacher.school } : null,
+      },
+      settings: {
+        monitoringCooldownDays: settings.monitoringCooldownDays,
+        monitoringStagesCount: settings.monitoringStagesCount,
       },
       multiplicationReport,
       divisionReport,

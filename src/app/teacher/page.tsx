@@ -114,6 +114,9 @@ function TeacherDashboardContent() {
   const [postTestTimeMult, setPostTestTimeMult] = useState(5);
   const [postTestTimeDiv, setPostTestTimeDiv] = useState(5);
 
+  const [monitoringCooldownDays, setMonitoringCooldownDays] = useState(7);
+  const [monitoringStagesCount, setMonitoringStagesCount] = useState(5);
+
   // Load settings from database
   useEffect(() => {
     if (!teacherUserId) return;
@@ -136,6 +139,8 @@ function TeacherDashboardContent() {
           setPracticeTimeDiv(data.settings.practiceTimeDiv);
           setPostTestTimeMult(data.settings.postTestTimeMult);
           setPostTestTimeDiv(data.settings.postTestTimeDiv);
+          setMonitoringCooldownDays(data.settings.monitoringCooldownDays ?? 7);
+          setMonitoringStagesCount(data.settings.monitoringStagesCount ?? 5);
         }
       })
       .catch((err) => console.error('Failed to fetch settings:', err))
@@ -163,6 +168,8 @@ function TeacherDashboardContent() {
           practiceTimeDiv,
           postTestTimeMult,
           postTestTimeDiv,
+          monitoringCooldownDays,
+          monitoringStagesCount,
         }),
       });
       const data = await response.json();
@@ -694,6 +701,43 @@ function TeacherDashboardContent() {
                     </div>
                   </div>
                 </div>
+
+                {/* Monitoring Settings Section */}
+                <div className="md:col-span-2 pt-6 border-t border-slate-100 space-y-4">
+                  <div className="flex items-center space-x-2 pb-2 border-b border-slate-100">
+                    <span className="text-xl">⏱️</span>
+                    <h3 className="text-lg font-bold text-slate-800">Fase Monitoring (Spaced Repetition)</h3>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5 p-4 bg-slate-50 rounded-xl border border-slate-100 shadow-sm">
+                      <h4 className="text-xs font-black text-teal-650 uppercase tracking-wider block mb-1">Masa Tunggu (Cooldown)</h4>
+                      <label className="text-[10px] font-bold text-slate-500 block mb-1">Jeda Waktu Antar Ujian (Hari)</label>
+                      <input
+                        type="number"
+                        min={1}
+                        max={90}
+                        value={monitoringCooldownDays}
+                        onChange={(e) => setMonitoringCooldownDays(Math.max(1, parseInt(e.target.value) || 0))}
+                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500/10 bg-white font-bold"
+                      />
+                      <span className="text-[8px] text-slate-400 mt-1.5 block">* Kunci otomatis tombol ujian pasca pengerjaan (default 7 hari)</span>
+                    </div>
+
+                    <div className="space-y-1.5 p-4 bg-slate-50 rounded-xl border border-slate-100 shadow-sm">
+                      <h4 className="text-xs font-black text-indigo-650 uppercase tracking-wider block mb-1">Jumlah Ujian Tahap</h4>
+                      <label className="text-[10px] font-bold text-slate-500 block mb-1">Total Tahapan (Stage) Monitoring</label>
+                      <input
+                        type="number"
+                        min={1}
+                        max={10}
+                        value={monitoringStagesCount}
+                        onChange={(e) => setMonitoringStagesCount(Math.max(1, parseInt(e.target.value) || 0))}
+                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500/10 bg-white font-bold"
+                      />
+                      <span className="text-[8px] text-slate-400 mt-1.5 block">* Jumlah sesi Ujian Monitoring untuk lulus total (default 5 kali)</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </CardContent>
             <CardFooter className="bg-slate-50 border-t border-slate-100 p-4 flex items-center justify-between">
@@ -847,7 +891,7 @@ function TeacherDashboardContent() {
                           <td className="py-4 px-6 text-center">
                             <span className={`text-[10px] font-extrabold border px-2.5 py-0.5 rounded-full ${getExamBadgeClass(student.examStatus)}`}>
                               {student.examStatus === 'MONITORING' 
-                                ? `Fase Monitoring (Stage ${student.monitoringStage}/5)` 
+                                ? `Fase Monitoring (Stage ${student.monitoringStage}/${settings?.monitoringStagesCount ?? 5})` 
                                 : getExamLabel(student.examStatus)
                               }
                             </span>
@@ -1013,7 +1057,7 @@ function TeacherDashboardContent() {
                       <h4 className="text-xs font-bold text-slate-800">Status Ujian Akhir Master</h4>
                       <p className="text-[10px] text-slate-400 mt-0.5">
                         {selectedStudent.examStatus === 'MONITORING' 
-                          ? `Fase Monitoring (Stage ${selectedStudent.monitoringStage}/5)` 
+                          ? `Fase Monitoring (Stage ${selectedStudent.monitoringStage}/${settings?.monitoringStagesCount ?? 5})` 
                           : getExamLabel(selectedStudent.examStatus)
                         }
                       </p>
@@ -1098,7 +1142,7 @@ function TeacherDashboardContent() {
                     <div className="space-y-2">
                       <div className="py-2.5 text-center text-xs font-bold text-teal-700 bg-teal-50/60 rounded-lg border border-teal-200 flex items-center justify-center">
                         <Clock className="w-4 h-4 mr-1.5 animate-spin text-teal-600" />
-                        Fase Monitoring (Stage {selectedStudent.monitoringStage}/5)
+                        Fase Monitoring (Stage {selectedStudent.monitoringStage}/{settings?.monitoringStagesCount ?? 5})
                       </div>
                       <p className="text-[10px] text-slate-400 leading-relaxed text-center italic">
                         Ujian monitoring berikutnya dapat diselesaikan mandiri oleh siswa dari rumah/sekolah tanpa unlock manual dari Guru.

@@ -189,6 +189,10 @@ function StudentDashboardContent() {
   const [studentInfo, setStudentInfo] = useState<any>(null);
   const [exams, setExams] = useState<any[]>([]);
   const [teacherComment, setTeacherComment] = useState('Belum ada catatan evaluasi dari guru pengajar.');
+  const [settings, setSettings] = useState<any>({
+    monitoringCooldownDays: 7,
+    monitoringStagesCount: 5,
+  });
 
   const [heatmapData, setHeatmapData] = useState<{
     multiplication: any[];
@@ -248,6 +252,9 @@ function StudentDashboardContent() {
     fetch(`/api/reports?studentId=${studentId}`)
       .then((res) => res.json())
       .then((data) => {
+        if (data.settings) {
+          setSettings(data.settings);
+        }
         if (data.student) {
           setStudentInfo(data.student);
           setProfile({
@@ -490,8 +497,11 @@ function StudentDashboardContent() {
           const mStage = studentInfo?.monitoringStage ?? 0;
           const lastExamTime = studentInfo?.lastExamDate ? new Date(studentInfo.lastExamDate).getTime() : 0;
           
+          const maxStages = settings?.monitoringStagesCount ?? 5;
+          const cooldownDays = settings?.monitoringCooldownDays ?? 7;
+          
           const now = new Date().getTime();
-          const cooldownMs = 7 * 24 * 60 * 60 * 1000;
+          const cooldownMs = cooldownDays * 24 * 60 * 60 * 1000;
           const elapsedMs = now - lastExamTime;
           const isCooldownActive = lastExamTime > 0 && elapsedMs < cooldownMs;
           const remainingMs = cooldownMs - elapsedMs;
@@ -500,7 +510,7 @@ function StudentDashboardContent() {
           const remainingHours = Math.max(0, Math.floor((remainingMs % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000)));
           const remainingMinutes = Math.max(0, Math.floor((remainingMs % (60 * 60 * 1000)) / (60 * 1000)));
 
-          if (mStage >= 5) {
+          if (mStage >= maxStages) {
             return (
               <div className="bg-gradient-to-r from-emerald-600/90 to-teal-600/90 border-2 border-emerald-400/40 text-emerald-100 p-6 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-6 backdrop-blur-sm shadow-xl">
                 <div className="flex items-center space-x-4">
@@ -510,7 +520,7 @@ function StudentDashboardContent() {
                   <div>
                     <h3 className="font-extrabold text-white text-lg">👑 True Master Numerasi (Lulus Total)</h3>
                     <p className="text-emerald-250 text-xs mt-1 leading-relaxed max-w-2xl">
-                      Luar biasa! Anda telah menyelesaikan seluruh 5 Tahap Ujian Monitoring (Spaced Repetition) dengan sukses. Anda telah resmi diakui sebagai True Master perkalian/pembagian!
+                      Luar biasa! Anda telah menyelesaikan seluruh {maxStages} Tahap Ujian Monitoring (Spaced Repetition) dengan sukses. Anda telah resmi diakui sebagai True Master perkalian/pembagian!
                     </p>
                   </div>
                 </div>
@@ -523,7 +533,7 @@ function StudentDashboardContent() {
               <div className="flex-1 space-y-3">
                 <div className="flex items-center space-x-2.5">
                   <span className="bg-teal-500/10 text-teal-300 border border-teal-500/20 px-2.5 py-0.5 rounded text-[10px] font-black tracking-widest uppercase">
-                    Fase Monitoring ({mStage}/5)
+                    Fase Monitoring ({mStage}/{maxStages})
                   </span>
                   <span className="text-slate-500">•</span>
                   <span className="text-slate-400 text-xs font-semibold">Spaced Repetition</span>
@@ -531,14 +541,14 @@ function StudentDashboardContent() {
                 <div>
                   <h3 className="font-extrabold text-white text-base">
                     {isCooldownActive 
-                      ? `⏳ Ujian Monitoring Berikutnya (Stage ${mStage + 1}/5) Terkunci` 
-                      : `🚀 Siap untuk Ujian Monitoring (Stage ${mStage + 1}/5)`
+                      ? `⏳ Ujian Monitoring Berikutnya (Stage ${mStage + 1}/${maxStages}) Terkunci` 
+                      : `🚀 Siap untuk Ujian Monitoring (Stage ${mStage + 1}/${maxStages})`
                     }
                   </h3>
                   <p className="text-slate-400 text-xs mt-1 leading-relaxed max-w-2xl">
                     {isCooldownActive 
-                      ? `Untuk memastikan retensi memori jangka panjang, ujian dikunci selama 7 hari. Masa tunggu berakhir dalam: ${remainingDays} hari ${remainingHours} jam ${remainingMinutes} menit.` 
-                      : "Jeda waktu 7 hari telah terpenuhi! Silakan klik tombol di samping untuk menempuh Ujian Monitoring Anda secara mandiri."
+                      ? `Untuk memastikan retensi memori jangka panjang, ujian dikunci selama ${cooldownDays} hari. Masa tunggu berakhir dalam: ${remainingDays} hari ${remainingHours} jam ${remainingMinutes} menit.` 
+                      : `Jeda waktu ${cooldownDays} hari telah terpenuhi! Silakan klik tombol di samping untuk menempuh Ujian Monitoring Anda secara mandiri.`
                     }
                   </p>
                   <p className="text-[10px] text-teal-400/80 mt-1 italic">
@@ -548,7 +558,7 @@ function StudentDashboardContent() {
 
                 {/* Progress dot indicator */}
                 <div className="flex items-center space-x-2 pt-1">
-                  {Array.from({ length: 5 }).map((_, idx) => (
+                  {Array.from({ length: maxStages }).map((_, idx) => (
                     <div 
                       key={idx} 
                       className={`h-2 w-8 rounded-full border ${
@@ -570,7 +580,7 @@ function StudentDashboardContent() {
                     className="inline-flex items-center justify-center px-5 py-3 rounded-xl text-xs font-black text-slate-500 bg-slate-800/80 border border-slate-700/60 cursor-not-allowed whitespace-nowrap"
                   >
                     <ShieldAlert className="w-4 h-4 mr-2" />
-                    Cooldown 7 Hari
+                    Cooldown {cooldownDays} Hari
                   </button>
                 ) : (
                   <a
@@ -578,7 +588,7 @@ function StudentDashboardContent() {
                     className="inline-flex items-center justify-center px-5 py-3 rounded-xl text-xs font-black text-white bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 transition-all shadow-lg hover:shadow-teal-500/20 hover:scale-[1.02] whitespace-nowrap"
                   >
                     <BookOpen className="w-4 h-4 mr-2" />
-                    Mulai Ujian Monitoring ({mStage + 1}/5)
+                    Mulai Ujian Monitoring ({mStage + 1}/{maxStages})
                   </a>
                 )}
               </div>

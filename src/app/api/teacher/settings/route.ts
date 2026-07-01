@@ -69,6 +69,8 @@ export async function POST(request: Request) {
       practiceTimeDiv,
       postTestTimeMult,
       postTestTimeDiv,
+      monitoringCooldownDays,
+      monitoringStagesCount,
     } = body;
 
     if (!teacherUserId) {
@@ -107,6 +109,8 @@ export async function POST(request: Request) {
         practiceTimeDiv: practiceTimeDiv !== undefined ? Number(practiceTimeDiv) : undefined,
         postTestTimeMult: postTestTimeMult !== undefined ? Number(postTestTimeMult) : undefined,
         postTestTimeDiv: postTestTimeDiv !== undefined ? Number(postTestTimeDiv) : undefined,
+        monitoringCooldownDays: monitoringCooldownDays !== undefined ? Number(monitoringCooldownDays) : undefined,
+        monitoringStagesCount: monitoringStagesCount !== undefined ? Number(monitoringStagesCount) : undefined,
       },
       create: {
         teacherId: teacher.id,
@@ -122,6 +126,8 @@ export async function POST(request: Request) {
         practiceTimeDiv: practiceTimeDiv !== undefined ? Number(practiceTimeDiv) : 0,
         postTestTimeMult: postTestTimeMult !== undefined ? Number(postTestTimeMult) : 5,
         postTestTimeDiv: postTestTimeDiv !== undefined ? Number(postTestTimeDiv) : 5,
+        monitoringCooldownDays: monitoringCooldownDays !== undefined ? Number(monitoringCooldownDays) : 7,
+        monitoringStagesCount: monitoringStagesCount !== undefined ? Number(monitoringStagesCount) : 5,
       },
     });
 
