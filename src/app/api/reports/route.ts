@@ -266,6 +266,43 @@ export async function GET(request: Request) {
       take: 6,
     });
 
+    // Generate dynamic practice trend fallback from completed sessions
+    const sessionsForTrend = await prisma.practiceSession.findMany({
+      where: { studentId, totalQuestions: { gt: 0 } },
+      orderBy: { date: 'asc' },
+    });
+
+    let dynamicHistory: any[] = [];
+    if (sessionsForTrend.length > 0) {
+      const totalSessions = sessionsForTrend.length;
+      if (totalSessions <= 6) {
+        dynamicHistory = sessionsForTrend.map((s, idx) => ({
+          id: s.id,
+          period: `Latihan ${idx + 1}`,
+          accuracy: s.totalQuestions > 0 ? Math.round((s.correctAnswers / s.totalQuestions) * 100) : 0,
+          speed: s.totalQuestions > 0 ? parseFloat((s.duration / s.totalQuestions).toFixed(1)) : 0,
+        }));
+      } else {
+        const chunkSize = Math.floor(totalSessions / 6);
+        for (let i = 0; i < 6; i++) {
+          const start = i * chunkSize;
+          const end = i === 5 ? totalSessions : (i + 1) * chunkSize;
+          const chunk = sessionsForTrend.slice(start, end);
+          if (chunk.length > 0) {
+            const totalQ = chunk.reduce((sum, s) => sum + s.totalQuestions, 0);
+            const totalC = chunk.reduce((sum, s) => sum + s.correctAnswers, 0);
+            const totalD = chunk.reduce((sum, s) => sum + s.duration, 0);
+            dynamicHistory.push({
+              id: `chunk-${i}`,
+              period: `Tren ${i + 1}`,
+              accuracy: totalQ > 0 ? Math.round((totalC / totalQ) * 100) : 0,
+              speed: totalQ > 0 ? parseFloat((totalD / totalQ).toFixed(1)) : 0,
+            });
+          }
+        }
+      }
+    }
+
     // Generate Heatmaps for both multiplication & division
     const multiplicationHeatmap = await getMasteryHeatmap(studentId, 'MULTIPLICATION');
     const divisionHeatmap = await getMasteryHeatmap(studentId, 'DIVISION');
@@ -326,19 +363,22 @@ export async function GET(request: Request) {
         activityScore: realTimeStats.activityScore,
         teacherComment: 'Belum ada catatan evaluasi dari guru pengajar.',
       } : null),
-      reportsHistory: reportsHistory.length > 0 
+      reportsHistory: reportsHistory.length >= 2 
         ? reportsHistory.map(r => ({
             id: r.id,
             period: r.period,
             accuracy: r.accuracy,
             speed: r.speed,
           }))
-        : (realTimeStats ? [{
-            id: 'realtime-hist',
-            period: 'Saat Ini',
-            accuracy: realTimeStats.accuracy,
-            speed: realTimeStats.speed,
-          }] : []),
+        : (dynamicHistory.length > 0 
+            ? dynamicHistory 
+            : (realTimeStats ? [{
+                id: 'realtime-hist',
+                period: 'Saat Ini',
+                accuracy: realTimeStats.accuracy,
+                speed: realTimeStats.speed,
+              }] : [])
+          ),
       heatmaps: {
         multiplication: multiplicationHeatmap,
         division: divisionHeatmap,
@@ -394,10 +434,33 @@ export async function PATCH(request: Request) {
     // 2. Update or Create report comment
     let updatedReport;
     if (reportId) {
+      const rep = await prisma.report.findUnique({ where: { id: reportId } });
+      const sId = rep ? rep.studentId : studentId;
+      
+      let accuracy = undefined;
+      let speed = undefined;
+      let activityScore = undefined;
+
+      if (rep && rep.accuracy === 0 && sId) {
+        const sessions = await prisma.practiceSession.findMany({
+          where: { studentId: sId, totalQuestions: { gt: 0 } },
+        });
+        if (sessions.length > 0) {
+          const validSessions = sessions.filter(p => p.totalQuestions > 0);
+          const totalQ = validSessions.reduce((sum, p) => sum + p.totalQuestions, 0);
+          const totalC = validSessions.reduce((sum, p) => sum + p.correctAnswers, 0);
+          const totalD = validSessions.reduce((sum, p) => sum + p.duration, 0);
+          accuracy = totalQ > 0 ? (totalC / totalQ) * 100 : 0.0;
+          speed = totalQ > 0 ? totalD / totalQ : 0.0;
+          activityScore = validSessions.length;
+        }
+      }
+
       updatedReport = await prisma.report.update({
         where: { id: reportId },
         data: {
           teacherComment: comment,
+          ...(accuracy !== undefined ? { accuracy, speed, activityScore } : {}),
         },
       });
     } else {
@@ -407,11 +470,28 @@ export async function PATCH(request: Request) {
         orderBy: { createdAt: 'desc' }
       });
 
+      const sessions = await prisma.practiceSession.findMany({
+        where: { studentId, totalQuestions: { gt: 0 } },
+      });
+      let accuracy = 0.0;
+      let speed = 0.0;
+      let activityScore = 0.0;
+      if (sessions.length > 0) {
+        const validSessions = sessions.filter(p => p.totalQuestions > 0);
+        const totalQ = validSessions.reduce((sum, p) => sum + p.totalQuestions, 0);
+        const totalC = validSessions.reduce((sum, p) => sum + p.correctAnswers, 0);
+        const totalD = validSessions.reduce((sum, p) => sum + p.duration, 0);
+        accuracy = totalQ > 0 ? (totalC / totalQ) * 100 : 0.0;
+        speed = totalQ > 0 ? totalD / totalQ : 0.0;
+        activityScore = validSessions.length;
+      }
+
       if (latest) {
         updatedReport = await prisma.report.update({
           where: { id: latest.id },
           data: {
             teacherComment: comment,
+            ...(latest.accuracy === 0 ? { accuracy, speed, activityScore } : {}),
           },
         });
       } else {
@@ -419,9 +499,9 @@ export async function PATCH(request: Request) {
           data: {
             studentId,
             period: 'Minggu 1',
-            accuracy: 0.0,
-            speed: 0.0,
-            activityScore: 0.0,
+            accuracy,
+            speed,
+            activityScore,
             teacherComment: comment,
           },
         });
