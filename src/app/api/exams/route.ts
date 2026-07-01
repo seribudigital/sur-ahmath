@@ -5,7 +5,7 @@ import prisma from '@/lib/prisma';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { studentId, examType, operationType, score } = body;
+    const { studentId, examType, operationType, score, duration, totalQuestions } = body;
 
     if (!studentId || !examType || !operationType || score === undefined) {
       return NextResponse.json(
@@ -27,6 +27,8 @@ export async function POST(request: Request) {
           score,
           statusRemedial,
           verifiedByGuru: examType === 'MONITORING' ? true : false,
+          duration,
+          totalQuestions,
         },
       });
 

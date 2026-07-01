@@ -73,6 +73,7 @@ function PracticeInterfaceContent() {
   const startTimeRef = useRef<number>(0);
   const totalCorrectRef = useRef<number>(0);
   const autoAdvanceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const examStartTimeRef = useRef<number>(0);
 
   // Keyboard navigation & Auto focus
   const inputRef = useRef<HTMLInputElement>(null);
@@ -324,6 +325,7 @@ function PracticeInterfaceContent() {
       setTotalCorrectAllRounds(0);
       setShowRoundBreak(false);
       setCompletedRoundScore(null);
+      examStartTimeRef.current = Date.now();
       setInSession(true);
       setIsCompleted(false);
       setFeedback(null);
@@ -509,9 +511,10 @@ function PracticeInterfaceContent() {
       startQuestionTimer();
     } else {
       // Completed current round of questions
-      if (examType === 'DIAGNOSTIC') {
+       if (examType === 'DIAGNOSTIC') {
         // Calculate score for this round
         const roundScore = Math.round((totalCorrectRef.current / questions.length) * 100);
+        const roundDuration = Math.round((Date.now() - examStartTimeRef.current) / 1000);
         setExamScores((prev) => [...prev, roundScore]);
         setTotalCorrectAllRounds((prev) => prev + totalCorrectRef.current);
 
@@ -525,6 +528,8 @@ function PracticeInterfaceContent() {
               examType,
               operationType,
               score: roundScore,
+              duration: roundDuration,
+              totalQuestions: questions.length,
             }),
           });
         } catch (err) {
@@ -547,6 +552,7 @@ function PracticeInterfaceContent() {
         if (examType) {
           // Non-diagnostic exams (e.g. POST_TEST)
           const finalScore = Math.round((totalCorrectRef.current / questions.length) * 100);
+          const finalDuration = Math.round((Date.now() - examStartTimeRef.current) / 1000);
           try {
             await fetch('/api/exams', {
               method: 'POST',
@@ -556,6 +562,8 @@ function PracticeInterfaceContent() {
                 examType,
                 operationType,
                 score: finalScore,
+                duration: finalDuration,
+                totalQuestions: questions.length,
               }),
             });
           } catch (err) {
@@ -588,6 +596,7 @@ function PracticeInterfaceContent() {
       setExamRound((prev) => prev + 1);
       setShowRoundBreak(false);
       setCompletedRoundScore(null);
+      examStartTimeRef.current = Date.now();
       startQuestionTimer();
     } catch (err: any) {
       alert(`Gagal menyiapkan sesi berikutnya: ${err.message}`);

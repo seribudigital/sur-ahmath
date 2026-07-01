@@ -151,6 +151,8 @@ model Exam {
   date           DateTime      @default(now())
   verifiedByGuru Boolean       @default(false) @map("verified_by_guru") // Master Exam verification by Guru
   createdAt      DateTime      @default(now()) @map("created_at")
+  duration       Int?
+  totalQuestions Int?          @map("total_questions")
 
   // Relations
   student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)

@@ -259,59 +259,48 @@ export async function GET(request: Request) {
     const multiplicationReport = getReportForOp('MULTIPLICATION');
     const divisionReport = getReportForOp('DIVISION');
 
-    // Fetch last 6 reports for progress trend chart
-    const reportsHistory = await prisma.report.findMany({
+    // Fetch student exams (ordered by date ascending for chronological chart)
+    const exams = await prisma.exam.findMany({
       where: { studentId },
-      orderBy: { createdAt: 'asc' },
-      take: 6,
-    });
-
-    // Generate dynamic practice trend fallback from completed sessions
-    const sessionsForTrend = await prisma.practiceSession.findMany({
-      where: { studentId, totalQuestions: { gt: 0 } },
       orderBy: { date: 'asc' },
     });
 
-    let dynamicHistory: any[] = [];
-    if (sessionsForTrend.length > 0) {
-      const totalSessions = sessionsForTrend.length;
-      if (totalSessions <= 6) {
-        dynamicHistory = sessionsForTrend.map((s, idx) => ({
-          id: s.id,
-          period: `Latihan ${idx + 1}`,
-          accuracy: s.totalQuestions > 0 ? Math.round((s.correctAnswers / s.totalQuestions) * 100) : 0,
-          speed: s.totalQuestions > 0 ? parseFloat((s.duration / s.totalQuestions).toFixed(1)) : 0,
-        }));
+    const examCountMap: Record<string, number> = {
+      DIAGNOSTIC: 0,
+      WEEKLY: 0,
+      MONTHLY: 0,
+      MASTERY: 0,
+      POST_TEST: 0,
+      MONITORING: 0,
+    };
+    const reportsHistoryFromExams = exams.map((e) => {
+      examCountMap[e.examType] = (examCountMap[e.examType] || 0) + 1;
+      let label = '';
+      if (e.examType === 'DIAGNOSTIC') {
+        label = `Pre-Test R${examCountMap.DIAGNOSTIC}`;
+      } else if (e.examType === 'POST_TEST') {
+        label = `Post-Test ${examCountMap.POST_TEST}`;
+      } else if (e.examType === 'MONITORING') {
+        label = `Monitor ${examCountMap.MONITORING}`;
       } else {
-        const chunkSize = Math.floor(totalSessions / 6);
-        for (let i = 0; i < 6; i++) {
-          const start = i * chunkSize;
-          const end = i === 5 ? totalSessions : (i + 1) * chunkSize;
-          const chunk = sessionsForTrend.slice(start, end);
-          if (chunk.length > 0) {
-            const totalQ = chunk.reduce((sum, s) => sum + s.totalQuestions, 0);
-            const totalC = chunk.reduce((sum, s) => sum + s.correctAnswers, 0);
-            const totalD = chunk.reduce((sum, s) => sum + s.duration, 0);
-            dynamicHistory.push({
-              id: `chunk-${i}`,
-              period: `Tren ${i + 1}`,
-              accuracy: totalQ > 0 ? Math.round((totalC / totalQ) * 100) : 0,
-              speed: totalQ > 0 ? parseFloat((totalD / totalQ).toFixed(1)) : 0,
-            });
-          }
-        }
+        label = `${e.examType} ${examCountMap[e.examType]}`;
       }
-    }
+      
+      const durationSec = e.duration ?? 0;
+      const totalQ = e.totalQuestions ?? 10;
+      const speed = totalQ > 0 ? parseFloat((durationSec / totalQ).toFixed(1)) : 0.0;
+      
+      return {
+        id: e.id,
+        period: label,
+        accuracy: Math.round(e.score),
+        speed: speed,
+      };
+    });
 
     // Generate Heatmaps for both multiplication & division
     const multiplicationHeatmap = await getMasteryHeatmap(studentId, 'MULTIPLICATION');
     const divisionHeatmap = await getMasteryHeatmap(studentId, 'DIVISION');
-
-    // Fetch student exams
-    const exams = await prisma.exam.findMany({
-      where: { studentId },
-      orderBy: { date: 'desc' },
-    });
 
     // Fetch teacher settings for the student
     let settings = null;
@@ -363,27 +352,12 @@ export async function GET(request: Request) {
         activityScore: realTimeStats.activityScore,
         teacherComment: 'Belum ada catatan evaluasi dari guru pengajar.',
       } : null),
-      reportsHistory: reportsHistory.length >= 2 
-        ? reportsHistory.map(r => ({
-            id: r.id,
-            period: r.period,
-            accuracy: r.accuracy,
-            speed: r.speed,
-          }))
-        : (dynamicHistory.length > 0 
-            ? dynamicHistory 
-            : (realTimeStats ? [{
-                id: 'realtime-hist',
-                period: 'Saat Ini',
-                accuracy: realTimeStats.accuracy,
-                speed: realTimeStats.speed,
-              }] : [])
-          ),
+      reportsHistory: reportsHistoryFromExams,
       heatmaps: {
         multiplication: multiplicationHeatmap,
         division: divisionHeatmap,
       },
-      exams: exams.map(e => ({
+      exams: [...exams].reverse().map(e => ({
         id: e.id,
         examType: e.examType,
         operationType: e.operationType,
