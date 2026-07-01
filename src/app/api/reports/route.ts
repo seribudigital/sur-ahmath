@@ -286,9 +286,33 @@ export async function GET(request: Request) {
         label = `${e.examType} ${examCountMap[e.examType]}`;
       }
       
-      const durationSec = e.duration ?? 0;
-      const totalQ = e.totalQuestions ?? 10;
-      const speed = totalQ > 0 ? parseFloat((durationSec / totalQ).toFixed(1)) : 0.0;
+      let durationSec = e.duration;
+      let totalQ = e.totalQuestions;
+
+      // If duration or totalQuestions is null (older exams), match with the closest PracticeSession in time
+      if ((durationSec === null || totalQ === null) && sessions.length > 0) {
+        const examTime = e.date.getTime();
+        let closestSession = sessions[0];
+        let minDiff = Math.abs(sessions[0].date.getTime() - examTime);
+
+        for (let i = 1; i < sessions.length; i++) {
+          const diff = Math.abs(sessions[i].date.getTime() - examTime);
+          if (diff < minDiff) {
+            minDiff = diff;
+            closestSession = sessions[i];
+          }
+        }
+
+        // Only use if the closest session is within 10 minutes (600,000 ms) of the exam
+        if (minDiff < 600000) {
+          durationSec = durationSec ?? closestSession.duration;
+          totalQ = totalQ ?? closestSession.totalQuestions;
+        }
+      }
+
+      const finalDuration = durationSec ?? 0;
+      const finalTotalQ = totalQ ?? 10;
+      const speed = finalTotalQ > 0 ? parseFloat((finalDuration / finalTotalQ).toFixed(1)) : 0.0;
       
       return {
         id: e.id,
