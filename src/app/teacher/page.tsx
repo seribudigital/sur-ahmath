@@ -364,6 +364,10 @@ function TeacherDashboardContent() {
 
   const getExamBadgeClass = (status: string) => {
     switch (status) {
+      case 'TRUE_MASTER':
+        return 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white border-emerald-300 font-black shadow-sm';
+      case 'MONITORING':
+        return 'bg-teal-50 text-teal-700 border-teal-200';
       case 'PASSED':
         return 'bg-emerald-50 text-emerald-700 border-emerald-100';
       case 'NEEDS_VERIFICATION':
@@ -382,6 +386,10 @@ function TeacherDashboardContent() {
 
   const getExamLabel = (status: string) => {
     switch (status) {
+      case 'TRUE_MASTER':
+        return 'True Master (Lulus Total)';
+      case 'MONITORING':
+        return 'Fase Monitoring';
       case 'PASSED':
         return 'Lulus Ujian Master';
       case 'NEEDS_VERIFICATION':
@@ -838,7 +846,10 @@ function TeacherDashboardContent() {
                           </td>
                           <td className="py-4 px-6 text-center">
                             <span className={`text-[10px] font-extrabold border px-2.5 py-0.5 rounded-full ${getExamBadgeClass(student.examStatus)}`}>
-                              {getExamLabel(student.examStatus)}
+                              {student.examStatus === 'MONITORING' 
+                                ? `Fase Monitoring (Stage ${student.monitoringStage}/5)` 
+                                : getExamLabel(student.examStatus)
+                              }
                             </span>
                           </td>
                           <td className="py-4 px-6 text-right">
@@ -1000,7 +1011,12 @@ function TeacherDashboardContent() {
                     </div>
                     <div>
                       <h4 className="text-xs font-bold text-slate-800">Status Ujian Akhir Master</h4>
-                      <p className="text-[10px] text-slate-400 mt-0.5">{getExamLabel(selectedStudent.examStatus)}</p>
+                      <p className="text-[10px] text-slate-400 mt-0.5">
+                        {selectedStudent.examStatus === 'MONITORING' 
+                          ? `Fase Monitoring (Stage ${selectedStudent.monitoringStage}/5)` 
+                          : getExamLabel(selectedStudent.examStatus)
+                        }
+                      </p>
                     </div>
                   </div>
 
@@ -1075,6 +1091,25 @@ function TeacherDashboardContent() {
                     <div className="py-2 text-center text-[10px] font-bold text-emerald-600 bg-emerald-50/50 rounded-lg border border-emerald-100 flex items-center justify-center">
                       <Check className="w-4 h-4 mr-1" />
                       Ujian Master Tervalidasi & Lulus
+                    </div>
+                  )}
+
+                  {selectedStudent.examStatus === 'MONITORING' && (
+                    <div className="space-y-2">
+                      <div className="py-2.5 text-center text-xs font-bold text-teal-700 bg-teal-50/60 rounded-lg border border-teal-200 flex items-center justify-center">
+                        <Clock className="w-4 h-4 mr-1.5 animate-spin text-teal-600" />
+                        Fase Monitoring (Stage {selectedStudent.monitoringStage}/5)
+                      </div>
+                      <p className="text-[10px] text-slate-400 leading-relaxed text-center italic">
+                        Ujian monitoring berikutnya dapat diselesaikan mandiri oleh siswa dari rumah/sekolah tanpa unlock manual dari Guru.
+                      </p>
+                    </div>
+                  )}
+
+                  {selectedStudent.examStatus === 'TRUE_MASTER' && (
+                    <div className="py-3 text-center text-xs font-black text-white bg-gradient-to-r from-emerald-650 to-teal-600 rounded-lg border border-emerald-400 shadow-md flex items-center justify-center">
+                      <Award className="w-5 h-5 mr-1.5 text-yellow-350 animate-bounce" />
+                      True Master (Lulus Rapor Total)
                     </div>
                   )}
 

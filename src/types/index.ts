@@ -2,7 +2,7 @@ export type Role = 'ADMIN' | 'TEACHER' | 'STUDENT' | 'PARENT';
 
 export type OperationType = 'MULTIPLICATION' | 'DIVISION';
 
-export type ExamType = 'DIAGNOSTIC' | 'WEEKLY' | 'MONTHLY' | 'MASTERY' | 'POST_TEST';
+export type ExamType = 'DIAGNOSTIC' | 'WEEKLY' | 'MONTHLY' | 'MASTERY' | 'POST_TEST' | 'MONITORING';
 
 export interface UserSession {
   id: string;

@@ -25,6 +25,7 @@ enum ExamType {
   MONTHLY
   MASTERY
   POST_TEST
+  MONITORING
 }
 
 model User {
@@ -87,6 +88,9 @@ model Student {
   uniqueToken    String?           @unique @default(uuid()) @map("unique_token")
   createdAt      DateTime          @default(now()) @map("created_at")
   updatedAt      DateTime          @updatedAt @map("updated_at")
+
+  monitoringStage  Int               @default(0) @map("monitoring_stage")
+  lastExamDate     DateTime?         @map("last_exam_date")
 
   // Relations
   user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)

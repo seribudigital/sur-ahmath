@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     // Determine status_remedial: passing score is 90% for all exams
     const statusRemedial = score < 90.0;
 
-    // Use transaction to ensure student flags are reset on POST_TEST
+    // Use transaction to ensure student flags are reset on POST_TEST and monitoringStage is updated on MONITORING
     const result = await prisma.$transaction(async (tx) => {
       const exam = await tx.exam.create({
         data: {
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
           operationType,
           score,
           statusRemedial,
-          verifiedByGuru: false,
+          verifiedByGuru: examType === 'MONITORING' ? true : false,
         },
       });
 
@@ -36,6 +36,21 @@ export async function POST(request: Request) {
           data: {
             examRequested: false,
             examUnlocked: false,
+          },
+        });
+      } else if (examType === 'MONITORING') {
+        const student = await tx.student.findUnique({
+          where: { id: studentId },
+          select: { monitoringStage: true }
+        });
+        const currentStage = student?.monitoringStage ?? 0;
+        const nextStage = Math.min(currentStage + 1, 5);
+
+        await tx.student.update({
+          where: { id: studentId },
+          data: {
+            monitoringStage: nextStage,
+            lastExamDate: new Date(),
           },
         });
       }
@@ -149,6 +164,17 @@ export async function PATCH(request: Request) {
         verifiedByGuru: true,
       },
     });
+
+    // If Post-Test was verified and passed (score >= 90%), initialize Monitoring Phase
+    if (updatedExam.examType === 'POST_TEST' && updatedExam.score >= 90.0) {
+      await prisma.student.update({
+        where: { id: updatedExam.studentId },
+        data: {
+          monitoringStage: 0,
+          lastExamDate: new Date(),
+        },
+      });
+    }
 
     return NextResponse.json({
       message: 'Exam verified successfully by Guru',

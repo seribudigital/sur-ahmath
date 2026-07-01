@@ -83,6 +83,8 @@ function PracticeInterfaceContent() {
   const [examRequested, setExamRequested] = useState(false);
   const [examUnlocked, setExamUnlocked] = useState(false);
   const [requestExamLoading, setRequestExamLoading] = useState(false);
+  const [monitoringStage, setMonitoringStage] = useState(0);
+  const [lastExamDate, setLastExamDate] = useState<string | null>(null);
 
   const pathKey = operationType === 'MULTIPLICATION' ? 'multiplication' : 'division';
 
@@ -126,6 +128,8 @@ function PracticeInterfaceContent() {
       if (res.ok) {
         setExamRequested(data.examRequested ?? false);
         setExamUnlocked(data.examUnlocked ?? false);
+        setMonitoringStage(data.monitoringStage ?? 0);
+        setLastExamDate(data.lastExamDate ?? null);
       }
     } catch (err) {
       console.error('Failed to fetch level progress:', err);
@@ -249,6 +253,24 @@ function PracticeInterfaceContent() {
       if (!examUnlocked) {
         alert('Ujian Akhir Master belum diaktifkan oleh Guru Anda. Silakan hubungi Guru untuk membuka kunci.');
         return;
+      }
+    }
+
+    if (examType === 'MONITORING') {
+      if (monitoringStage >= 5) {
+        alert('Anda telah menyelesaikan seluruh Ujian Monitoring (True Master)!');
+        return;
+      }
+      if (lastExamDate) {
+        const lastExam = new Date(lastExamDate).getTime();
+        const now = new Date().getTime();
+        const cooldownMs = 7 * 24 * 60 * 60 * 1000;
+        if ((now - lastExam) < cooldownMs) {
+          const remainingMs = cooldownMs - (now - lastExam);
+          const remainingDays = Math.ceil(remainingMs / (24 * 60 * 60 * 1000));
+          alert(`Ujian Monitoring terkunci! Silakan tunggu ${remainingDays} hari lagi.`);
+          return;
+        }
       }
     }
 
@@ -674,7 +696,7 @@ function PracticeInterfaceContent() {
               </span>
               <h1 className="text-xl font-bold text-white">
                 {examType 
-                  ? `Ujian Resmi: ${examType === 'DIAGNOSTIC' ? 'Pre-Test (Diagnostik)' : 'Ujian Akhir Master'}` 
+                  ? `Ujian Resmi: ${examType === 'DIAGNOSTIC' ? 'Pre-Test (Diagnostik)' : examType === 'MONITORING' ? `Ujian Monitoring (Stage ${monitoringStage + 1}/5)` : 'Ujian Akhir Master'}` 
                   : 'Latihan Numerasi Mandiri'
                 }
               </h1>
@@ -690,7 +712,7 @@ function PracticeInterfaceContent() {
             <div className="h-2 bg-gradient-to-r from-teal-500 to-indigo-500" />
             <CardHeader>
               <CardTitle className="text-2xl text-slate-800 font-extrabold">
-                {examType ? 'Mulai Ujian Resmi' : 'Pengaturan Latihan'}
+                {examType === 'MONITORING' ? `Mulai Ujian Monitoring (Stage ${monitoringStage + 1}/5)` : examType ? 'Mulai Ujian Resmi' : 'Pengaturan Latihan'}
               </CardTitle>
               <CardDescription>
                 {examType 
@@ -757,6 +779,9 @@ function PracticeInterfaceContent() {
                   <p>1. Parameter tingkatan level dikunci pada <strong>EXPERT (Tabel 1-10)</strong> secara menyeluruh.</p>
                   <p>2. Jumlah pertanyaan dikunci sebanyak <strong>{limit} butir soal</strong> acak.</p>
                   <p>3. Format pengerjaan dikunci pada mode <strong>Flash Drill (A &times; B)</strong>.</p>
+                  {examType === 'MONITORING' && (
+                    <p className="text-teal-700 font-bold mt-2">✓ Ujian Monitoring dikerjakan secara MANDIRI dari rumah/sekolah tanpa verifikasi guru.</p>
+                  )}
                   <p className="text-[10px] text-slate-500 mt-2 italic">Pastikan kestabilan koneksi internet sebelum memulai ujian.</p>
                 </div>
               ) : (
@@ -817,9 +842,17 @@ function PracticeInterfaceContent() {
                 const isSelectedLevelUnlocked = levelProgress 
                   ? (levelProgress[pathKey]?.[level]?.unlocked ?? false)
                   : false;
-                const isLocked = examType === 'POST_TEST'
-                  ? !(levelProgress?.[pathKey]?.EXPERT?.unlocked ?? false)
-                  : (!examType && !isSelectedLevelUnlocked);
+                let isLocked = false;
+                if (examType === 'POST_TEST') {
+                  isLocked = !(levelProgress?.[pathKey]?.EXPERT?.unlocked ?? false);
+                } else if (examType === 'MONITORING') {
+                  const onCooldown = lastExamDate 
+                    ? (new Date().getTime() - new Date(lastExamDate).getTime()) < 7 * 24 * 60 * 60 * 1000
+                    : false;
+                  isLocked = monitoringStage >= 5 || onCooldown;
+                } else if (!examType) {
+                  isLocked = !isSelectedLevelUnlocked;
+                }
 
                 return (
                   <button
@@ -841,6 +874,8 @@ function PracticeInterfaceContent() {
                         <Lock className="w-5 h-5 mr-2 text-slate-400" />
                         {examType === 'POST_TEST'
                           ? 'Selesaikan Semua Level Terlebih Dahulu'
+                          : examType === 'MONITORING'
+                          ? (monitoringStage >= 5 ? 'Seluruh Tahap Monitoring Selesai' : 'Ujian Monitoring Terkunci (Cooldown)')
                           : (levelProgress?.[pathKey]?.[level]?.needsPreTest 
                             ? 'Selesaikan Pre-Test Terlebih Dahulu' 
                             : 'Level Masih Terkunci')

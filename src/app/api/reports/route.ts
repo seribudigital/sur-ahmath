@@ -98,7 +98,13 @@ export async function GET(request: Request) {
         let examStatus = 'LOCKED';
         let examId = postTest ? postTest.id : null;
         
-        if (postTest && postTest.verifiedByGuru) {
+        const hasPassedPostTest = s.exams.some(e => e.examType === 'POST_TEST' && e.verifiedByGuru && e.score >= 90.0);
+
+        if (s.monitoringStage >= 5) {
+          examStatus = 'TRUE_MASTER';
+        } else if (hasPassedPostTest) {
+          examStatus = 'MONITORING';
+        } else if (postTest && postTest.verifiedByGuru) {
           examStatus = 'PASSED';
         } else if (postTest && postTest.score >= 90.0) {
           // Completed & passed, waiting for teacher approval
@@ -132,7 +138,9 @@ export async function GET(request: Request) {
           preTestAvgDiv,
           postTestsMult,
           postTestsDiv,
-          uniqueToken: s.uniqueToken
+          uniqueToken: s.uniqueToken,
+          monitoringStage: s.monitoringStage,
+          lastExamDate: s.lastExamDate
         };
       });
 
@@ -278,6 +286,8 @@ export async function GET(request: Request) {
         examUnlocked: student.examUnlocked,
         multiplicationExpert,
         divisionExpert,
+        monitoringStage: student.monitoringStage,
+        lastExamDate: student.lastExamDate,
         teacher: student.teacher ? { nama: student.teacher.nama, school: student.teacher.school } : null,
       },
       multiplicationReport,

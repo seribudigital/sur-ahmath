@@ -296,10 +296,13 @@ function StudentDashboardContent() {
             else if (e.examType === 'WEEKLY') name = 'Ujian Mingguan';
             else if (e.examType === 'MONTHLY') name = 'Ujian Evaluasi Bulanan';
             else if (e.examType === 'POST_TEST') name = `Ujian Akhir Master (${e.operationType === 'MULTIPLICATION' ? 'Perkalian' : 'Pembagian'})`;
+            else if (e.examType === 'MONITORING') name = `Ujian Monitoring (${e.operationType === 'MULTIPLICATION' ? 'Perkalian' : 'Pembagian'})`;
             
             let status = 'REMEDIAL';
             if (e.examType === 'POST_TEST') {
               status = e.verifiedByGuru ? 'LULUS' : 'BUTUH VERIFIKASI';
+            } else if (e.examType === 'MONITORING') {
+              status = e.score >= 90.0 ? 'LULUS' : 'REMEDIAL';
             } else {
               status = e.score >= 70.0 ? 'LULUS' : 'REMEDIAL';
             }
@@ -483,16 +486,105 @@ function StudentDashboardContent() {
           </div>
         )}
 
-        {currentHasPreTest && currentPostTestStatus === 'PASSED' && (
-          <div className="bg-emerald-500/10 border-2 border-emerald-500/30 text-emerald-300 p-5 rounded-2xl flex items-center justify-between gap-4 backdrop-blur-sm">
-            <div>
-              <h3 className="font-extrabold text-white text-base">🎉 Selamat! Ujian Master {activeTab === 'multiplication' ? 'Perkalian' : 'Pembagian'} Lulus</h3>
-              <p className="text-slate-400 text-xs mt-1 leading-relaxed">
-                Selamat! Anda telah lulus Ujian Akhir Master (Post-Test) untuk {activeTab === 'multiplication' ? 'perkalian' : 'pembagian'}. Anda telah resmi menguasai materi numerasi dasar ini!
-              </p>
+        {currentHasPreTest && currentPostTestStatus === 'PASSED' && (() => {
+          const mStage = studentInfo?.monitoringStage ?? 0;
+          const lastExamTime = studentInfo?.lastExamDate ? new Date(studentInfo.lastExamDate).getTime() : 0;
+          
+          const now = new Date().getTime();
+          const cooldownMs = 7 * 24 * 60 * 60 * 1000;
+          const elapsedMs = now - lastExamTime;
+          const isCooldownActive = lastExamTime > 0 && elapsedMs < cooldownMs;
+          const remainingMs = cooldownMs - elapsedMs;
+
+          const remainingDays = Math.max(0, Math.floor(remainingMs / (24 * 60 * 60 * 1000)));
+          const remainingHours = Math.max(0, Math.floor((remainingMs % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000)));
+          const remainingMinutes = Math.max(0, Math.floor((remainingMs % (60 * 60 * 1000)) / (60 * 1000)));
+
+          if (mStage >= 5) {
+            return (
+              <div className="bg-gradient-to-r from-emerald-600/90 to-teal-600/90 border-2 border-emerald-400/40 text-emerald-100 p-6 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-6 backdrop-blur-sm shadow-xl">
+                <div className="flex items-center space-x-4">
+                  <div className="p-3.5 bg-yellow-400/10 rounded-full text-yellow-300 border border-yellow-400/20 flex-shrink-0 animate-bounce">
+                    <Award className="w-8 h-8" />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-white text-lg">👑 True Master Numerasi (Lulus Total)</h3>
+                    <p className="text-emerald-250 text-xs mt-1 leading-relaxed max-w-2xl">
+                      Luar biasa! Anda telah menyelesaikan seluruh 5 Tahap Ujian Monitoring (Spaced Repetition) dengan sukses. Anda telah resmi diakui sebagai True Master perkalian/pembagian!
+                    </p>
+                  </div>
+                </div>
+              </div>
+            );
+          }
+
+          return (
+            <div className="bg-gradient-to-r from-teal-950/80 to-slate-900/80 border-2 border-teal-500/30 text-teal-300 p-6 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-6 backdrop-blur-sm shadow-xl">
+              <div className="flex-1 space-y-3">
+                <div className="flex items-center space-x-2.5">
+                  <span className="bg-teal-500/10 text-teal-300 border border-teal-500/20 px-2.5 py-0.5 rounded text-[10px] font-black tracking-widest uppercase">
+                    Fase Monitoring ({mStage}/5)
+                  </span>
+                  <span className="text-slate-500">•</span>
+                  <span className="text-slate-400 text-xs font-semibold">Spaced Repetition</span>
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-white text-base">
+                    {isCooldownActive 
+                      ? `⏳ Ujian Monitoring Berikutnya (Stage ${mStage + 1}/5) Terkunci` 
+                      : `🚀 Siap untuk Ujian Monitoring (Stage ${mStage + 1}/5)`
+                    }
+                  </h3>
+                  <p className="text-slate-400 text-xs mt-1 leading-relaxed max-w-2xl">
+                    {isCooldownActive 
+                      ? `Untuk memastikan retensi memori jangka panjang, ujian dikunci selama 7 hari. Masa tunggu berakhir dalam: ${remainingDays} hari ${remainingHours} jam ${remainingMinutes} menit.` 
+                      : "Jeda waktu 7 hari telah terpenuhi! Silakan klik tombol di samping untuk menempuh Ujian Monitoring Anda secara mandiri."
+                    }
+                  </p>
+                  <p className="text-[10px] text-teal-400/80 mt-1 italic">
+                    Catatan: Jalur Latihan Mandiri tetap terbuka bebas untuk belajar kapan saja selama masa tunggu.
+                  </p>
+                </div>
+
+                {/* Progress dot indicator */}
+                <div className="flex items-center space-x-2 pt-1">
+                  {Array.from({ length: 5 }).map((_, idx) => (
+                    <div 
+                      key={idx} 
+                      className={`h-2 w-8 rounded-full border ${
+                        idx < mStage 
+                          ? 'bg-emerald-500 border-emerald-600 shadow-sm shadow-emerald-500/20' 
+                          : idx === mStage && !isCooldownActive
+                          ? 'bg-teal-400 border-teal-500 animate-pulse'
+                          : 'bg-slate-800 border-slate-700'
+                      }`} 
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                {isCooldownActive ? (
+                  <button
+                    disabled
+                    className="inline-flex items-center justify-center px-5 py-3 rounded-xl text-xs font-black text-slate-500 bg-slate-800/80 border border-slate-700/60 cursor-not-allowed whitespace-nowrap"
+                  >
+                    <ShieldAlert className="w-4 h-4 mr-2" />
+                    Cooldown 7 Hari
+                  </button>
+                ) : (
+                  <a
+                    href={studentId ? `/practice?examType=MONITORING&operationType=${currentOp}&studentId=${studentId}` : `/practice?examType=MONITORING&operationType=${currentOp}`}
+                    className="inline-flex items-center justify-center px-5 py-3 rounded-xl text-xs font-black text-white bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 transition-all shadow-lg hover:shadow-teal-500/20 hover:scale-[1.02] whitespace-nowrap"
+                  >
+                    <BookOpen className="w-4 h-4 mr-2" />
+                    Mulai Ujian Monitoring ({mStage + 1}/5)
+                  </a>
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {currentHasPreTest && currentPostTestStatus !== 'PASSED' && (
           <>
