@@ -112,7 +112,7 @@ export default function Home() {
   };
 
   return (
-    <div className="relative z-0 min-h-screen bg-slate-955 text-white font-sans flex flex-col justify-between overflow-x-hidden">
+    <div className="relative z-0 min-h-screen bg-slate-950 text-white font-sans flex flex-col justify-between overflow-x-hidden">
       {/* Decorative gradient glowing circles */}
       <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-teal-500/10 rounded-full blur-[120px] -z-10" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-indigo-500/10 rounded-full blur-[120px] -z-10" />
@@ -127,7 +127,7 @@ export default function Home() {
             Sur'ah<span className="text-teal-400 font-black">Math</span>
           </span>
         </div>
-        <div className="text-xs font-semibold text-slate-550">
+        <div className="text-xs font-semibold text-slate-500">
           Versi Pengembangan v1.0.0
         </div>
       </header>
@@ -268,7 +268,7 @@ export default function Home() {
                 </button>
 
                 {/* Registration Link */}
-                <div className="text-center text-xs text-slate-405 mt-4 w-full">
+                <div className="text-center text-xs text-slate-400 mt-4 w-full">
                   Siswa baru?{' '}
                   <button
                     type="button"
@@ -308,7 +308,7 @@ export default function Home() {
                   <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs font-medium space-y-2">
                     <div className="font-bold text-sm text-emerald-400">Pendaftaran Berhasil! 🎉</div>
                     <p className="text-slate-300">Akun latihan matematika Anda berhasil dibuat. Silakan gunakan detail berikut untuk masuk:</p>
-                    <div className="bg-slate-950 p-3 rounded-lg border border-slate-850 space-y-1.5 font-mono text-[11px] text-white select-all">
+                    <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1.5 font-mono text-[11px] text-white select-all">
                       <div>Email: <span className="text-teal-400 font-bold">{regSuccess.email}</span></div>
                       <div>Sandi: <span className="text-teal-400 font-bold">{regSuccess.password}</span></div>
                       <div>Kelas: <span className="text-slate-300 font-bold">{regSuccess.kelas}</span></div>
@@ -332,7 +332,7 @@ export default function Home() {
               ) : (
                 <form onSubmit={handleRegister} className="mt-5 space-y-4">
                   {regError && (
-                    <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-450 text-xs font-semibold flex items-start space-x-2">
+                    <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-semibold flex items-start space-x-2">
                       <AlertCircle className="w-4 h-4 mr-1 flex-shrink-0 mt-0.5 text-rose-400" />
                       <span>{regError}</span>
                     </div>
@@ -395,7 +395,7 @@ export default function Home() {
                         setIsRegisterOpen(false);
                         setRegError(null);
                       }}
-                      className="flex-1 py-2.5 border border-slate-850 hover:border-slate-700 text-slate-300 hover:text-white text-xs font-extrabold rounded-xl transition-all"
+                      className="flex-1 py-2.5 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white text-xs font-extrabold rounded-xl transition-all"
                     >
                       Batal
                     </button>
