@@ -78,13 +78,34 @@ function PracticeInterfaceContent() {
 
   // Level Lock/Unlock progress states
   const [levelProgress, setLevelProgress] = useState<any>(null);
+  const [newLevelUnlockedName, setNewLevelUnlockedName] = useState<string | null>(null);
 
-  const fetchProgress = async () => {
+  const fetchProgress = async (isSessionCompletion = false) => {
     if (!studentId) return;
     try {
       const res = await fetch(`/api/practice?studentId=${studentId}&checkProgress=true`);
       const data = await res.json();
       if (res.ok && data.progress) {
+        if (isSessionCompletion && levelProgress) {
+          const pathKey = operationType === 'MULTIPLICATION' ? 'multiplication' : 'division';
+          const prevStatus = levelProgress[pathKey] || {};
+          const nextStatus = data.progress[pathKey] || {};
+          
+          const levelsToCheck = ['INTERMEDIATE', 'ADVANCED', 'EXPERT'];
+          let highestNewlyUnlocked: string | null = null;
+          
+          for (const lvl of levelsToCheck) {
+            const wasUnlocked = prevStatus[lvl]?.unlocked ?? false;
+            const isUnlocked = nextStatus[lvl]?.unlocked ?? false;
+            if (!wasUnlocked && isUnlocked) {
+              highestNewlyUnlocked = lvl;
+            }
+          }
+          
+          if (highestNewlyUnlocked) {
+            setNewLevelUnlockedName(highestNewlyUnlocked);
+          }
+        }
         setLevelProgress(data.progress);
       }
       if (res.ok && data.settings) {
@@ -239,6 +260,7 @@ function PracticeInterfaceContent() {
       setQuestions(qData.questions);
       
       // Initialize loop variables
+      setNewLevelUnlockedName(null);
       setCurrentIdx(0);
       setSessionLogs([]);
       totalCorrectRef.current = 0;
@@ -465,7 +487,7 @@ function PracticeInterfaceContent() {
         if (timerRef.current) clearInterval(timerRef.current);
 
         // Refresh unlocked level progress
-        fetchProgress();
+        fetchProgress(true);
 
         if (examType) {
           // Non-diagnostic exams (e.g. POST_TEST)
@@ -945,6 +967,28 @@ function PracticeInterfaceContent() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+              {/* Newly Unlocked Level Alert */}
+              {newLevelUnlockedName && (
+                <div className="p-5 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 rounded-2xl text-white shadow-xl space-y-2 border border-emerald-400 relative overflow-hidden animate-pulse">
+                  <div className="absolute top-0 right-0 transform translate-x-3 -translate-y-3 text-white/10 text-8xl font-black select-none pointer-events-none">
+                    ⭐
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-2xl">🏆</span>
+                    <span className="font-black text-sm uppercase tracking-wider">Level Baru Terbuka!</span>
+                  </div>
+                  <p className="text-xs font-semibold leading-relaxed text-emerald-50">
+                    Selamat! Anda telah berhasil membuka tingkatan level berikutnya:{' '}
+                    <strong className="text-yellow-300 underline font-black">
+                      {newLevelUnlockedName === 'INTERMEDIATE' ? 'Intermediate (Tabel 4-6)' : 
+                       newLevelUnlockedName === 'ADVANCED' ? 'Advanced (Tabel 7-8)' : 
+                       newLevelUnlockedName === 'EXPERT' ? 'Expert (Tabel 9-10)' : newLevelUnlockedName}
+                    </strong>
+                    . Terus tingkatkan dan asah kemampuan berhitung Anda!
+                  </p>
+                </div>
+              )}
+
               {/* Final Score Cards */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 text-center">
