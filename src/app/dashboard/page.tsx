@@ -336,24 +336,24 @@ function StudentDashboardContent() {
       setMetrics({
         accuracy: {
           value: `${currentReport.accuracy.toFixed(1)}%`,
-          subtext: currentReport.activityScore > 0 ? `Akurasi rata-rata dari ${currentReport.activityScore} latihan` : 'Belum ada data latihan',
+          subtext: currentReport.activityScore > 0 ? `Akurasi rata-rata dari ${currentReport.activityScore} ujian` : 'Belum ada data ujian',
           trend: undefined
         },
         speed: {
           value: `${currentReport.speed.toFixed(1)} dtk`,
-          subtext: currentReport.activityScore > 0 ? 'Rata-rata kecepatan berhitung' : 'Belum ada data latihan',
+          subtext: currentReport.activityScore > 0 ? 'Kecepatan rata-rata per soal dalam ujian' : 'Belum ada data ujian',
           trend: undefined
         },
         activity: {
           value: `${currentReport.activityScore}`,
-          subtext: `Total sesi latihan ${activeTab === 'multiplication' ? 'perkalian' : 'pembagian'}`,
+          subtext: `Total sesi ujian ${activeTab === 'multiplication' ? 'perkalian' : 'pembagian'}`,
           trend: undefined
         }
       });
     } else {
       setMetrics({
-        accuracy: { value: '0%', subtext: 'Belum ada data latihan', trend: undefined },
-        speed: { value: '0.0 dtk', subtext: 'Belum ada data latihan', trend: undefined },
+        accuracy: { value: '0%', subtext: 'Belum ada data ujian', trend: undefined },
+        speed: { value: '0.0 dtk', subtext: 'Belum ada data ujian', trend: undefined },
         activity: { value: '0', subtext: 'Belum ada keaktifan', trend: undefined }
       });
     }

@@ -234,36 +234,71 @@ export async function GET(request: Request) {
       };
     };
 
-    const multiplicationExpert = getExpertProgressForOp('MULTIPLICATION');
-    const divisionExpert = getExpertProgressForOp('DIVISION');
+    // Fetch student exams (ordered by date ascending for chronological chart)
+    const exams = await prisma.exam.findMany({
+      where: { studentId },
+      orderBy: { date: 'asc' },
+    });
 
     const getReportForOp = (opType: any) => {
-      const opSessions = sessions.filter(s => s.operationType === opType && s.totalQuestions > 0);
-      if (opSessions.length === 0) {
+      const opExams = exams.filter(e => e.operationType === opType);
+      if (opExams.length === 0) {
         return {
           accuracy: 0.0,
           speed: 0.0,
           activityScore: 0,
         };
       }
-      const totalQ = opSessions.reduce((sum, s) => sum + s.totalQuestions, 0);
-      const totalC = opSessions.reduce((sum, s) => sum + s.correctAnswers, 0);
-      const totalD = opSessions.reduce((sum, s) => sum + s.duration, 0);
+      
+      let totalQ = 0;
+      let totalC = 0;
+      let totalD = 0;
+      let examsCount = opExams.length;
+
+      for (const e of opExams) {
+        let durationSec = e.duration;
+        let qCount = e.totalQuestions;
+
+        // Fallback for older exams
+        if ((durationSec === null || qCount === null) && sessions.length > 0) {
+          const examTime = e.date.getTime();
+          let closestSession = sessions[0];
+          let minDiff = Math.abs(sessions[0].date.getTime() - examTime);
+
+          for (let i = 1; i < sessions.length; i++) {
+            const diff = Math.abs(sessions[i].date.getTime() - examTime);
+            if (diff < minDiff) {
+              minDiff = diff;
+              closestSession = sessions[i];
+            }
+          }
+
+          if (minDiff < 600000) {
+            durationSec = durationSec ?? closestSession.duration;
+            qCount = qCount ?? closestSession.totalQuestions;
+          }
+        }
+
+        const finalDuration = durationSec ?? 0;
+        const finalQCount = qCount ?? 10;
+        
+        totalQ += finalQCount;
+        totalC += Math.round((e.score / 100) * finalQCount);
+        totalD += finalDuration;
+      }
+
       return {
         accuracy: totalQ > 0 ? (totalC / totalQ) * 100 : 0.0,
         speed: totalQ > 0 ? totalD / totalQ : 0.0,
-        activityScore: opSessions.length,
+        activityScore: examsCount,
       };
     };
 
     const multiplicationReport = getReportForOp('MULTIPLICATION');
     const divisionReport = getReportForOp('DIVISION');
 
-    // Fetch student exams (ordered by date ascending for chronological chart)
-    const exams = await prisma.exam.findMany({
-      where: { studentId },
-      orderBy: { date: 'asc' },
-    });
+    const multiplicationExpert = getExpertProgressForOp('MULTIPLICATION');
+    const divisionExpert = getExpertProgressForOp('DIVISION');
 
     const examCountMap: Record<string, number> = {
       DIAGNOSTIC: 0,
