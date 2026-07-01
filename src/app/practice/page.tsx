@@ -86,6 +86,12 @@ function PracticeInterfaceContent() {
 
   const pathKey = operationType === 'MULTIPLICATION' ? 'multiplication' : 'division';
 
+  const isPathLockedForPostTest = (op: 'MULTIPLICATION' | 'DIVISION') => {
+    if (examType !== 'POST_TEST') return false;
+    const pk = op === 'MULTIPLICATION' ? 'multiplication' : 'division';
+    return !(levelProgress?.[pk]?.EXPERT?.unlocked ?? false);
+  };
+
   const fetchProgress = async (isSessionCompletion = false) => {
     if (!studentId) return;
     try {
@@ -233,16 +239,31 @@ function PracticeInterfaceContent() {
   // Start the Practice session: call APIs to start session & get questions
   const handleStartSession = async () => {
     const pathKey = operationType === 'MULTIPLICATION' ? 'multiplication' : 'division';
-    const isSelectedLevelUnlocked = levelProgress
-      ? (levelProgress[pathKey]?.[level]?.unlocked ?? false)
-      : false;
-    if (!isSelectedLevelUnlocked && !examType) {
-      if (level === 'BEGINNER') {
-        alert('Jalur latihan ini masih terkunci! Anda harus menyelesaikan Ujian Pre-Test terlebih dahulu.');
-      } else {
-        alert('Tingkatan level ini masih terkunci! Selesaikan level sebelumnya terlebih dahulu.');
+    
+    if (examType === 'POST_TEST') {
+      const isExpertUnlocked = levelProgress?.[pathKey]?.EXPERT?.unlocked ?? false;
+      if (!isExpertUnlocked) {
+        alert('Ujian Akhir Master terkunci! Anda harus menyelesaikan semua tingkatan level latihan terlebih dahulu.');
+        return;
       }
-      return;
+      if (!examUnlocked) {
+        alert('Ujian Akhir Master belum diaktifkan oleh Guru Anda. Silakan hubungi Guru untuk membuka kunci.');
+        return;
+      }
+    }
+
+    if (!examType) {
+      const isSelectedLevelUnlocked = levelProgress
+        ? (levelProgress[pathKey]?.[level]?.unlocked ?? false)
+        : false;
+      if (!isSelectedLevelUnlocked) {
+        if (level === 'BEGINNER') {
+          alert('Jalur latihan ini masih terkunci! Anda harus menyelesaikan Ujian Pre-Test terlebih dahulu.');
+        } else {
+          alert('Tingkatan level ini masih terkunci! Selesaikan level sebelumnya terlebih dahulu.');
+        }
+        return;
+      }
     }
 
     setLoading(true);
@@ -684,24 +705,44 @@ function PracticeInterfaceContent() {
                 <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-2">Jalur Belajar</label>
                 <div className="grid grid-cols-2 gap-3">
                   <button
-                    onClick={() => setOperationType('MULTIPLICATION')}
-                    className={`p-4 rounded-xl border text-center font-bold transition-all ${
+                    type="button"
+                    onClick={() => {
+                      if (isPathLockedForPostTest('MULTIPLICATION')) {
+                        alert('Jalur Perkalian belum siap untuk Ujian Akhir Master. Anda harus menyelesaikan tingkatan latihan Perkalian terlebih dahulu.');
+                        return;
+                      }
+                      setOperationType('MULTIPLICATION');
+                    }}
+                    className={`p-4 rounded-xl border text-center font-bold transition-all relative ${
                       operationType === 'MULTIPLICATION'
                         ? 'border-teal-500 bg-teal-500/5 text-teal-700 shadow-sm'
                         : 'border-slate-200 hover:border-slate-300 text-slate-600'
-                    }`}
+                    } ${isPathLockedForPostTest('MULTIPLICATION') ? 'opacity-50 cursor-not-allowed bg-slate-50' : ''}`}
                   >
-                    Perkalian (1-10)
+                    <div className="flex items-center justify-center space-x-1.5">
+                      <span>Perkalian (1-10)</span>
+                      {isPathLockedForPostTest('MULTIPLICATION') && <Lock className="w-3.5 h-3.5 text-slate-400" />}
+                    </div>
                   </button>
                   <button
-                    onClick={() => setOperationType('DIVISION')}
-                    className={`p-4 rounded-xl border text-center font-bold transition-all ${
+                    type="button"
+                    onClick={() => {
+                      if (isPathLockedForPostTest('DIVISION')) {
+                        alert('Jalur Pembagian belum siap untuk Ujian Akhir Master. Anda harus menyelesaikan tingkatan latihan Pembagian terlebih dahulu.');
+                        return;
+                      }
+                      setOperationType('DIVISION');
+                    }}
+                    className={`p-4 rounded-xl border text-center font-bold transition-all relative ${
                       operationType === 'DIVISION'
                         ? 'border-indigo-500 bg-indigo-500/5 text-indigo-700 shadow-sm'
                         : 'border-slate-200 hover:border-slate-300 text-slate-600'
-                    }`}
+                    } ${isPathLockedForPostTest('DIVISION') ? 'opacity-50 cursor-not-allowed bg-slate-50' : ''}`}
                   >
-                    Pembagian (1-10)
+                    <div className="flex items-center justify-center space-x-1.5">
+                      <span>Pembagian (1-10)</span>
+                      {isPathLockedForPostTest('DIVISION') && <Lock className="w-3.5 h-3.5 text-slate-400" />}
+                    </div>
                   </button>
                 </div>
               </div>
@@ -776,7 +817,9 @@ function PracticeInterfaceContent() {
                 const isSelectedLevelUnlocked = levelProgress 
                   ? (levelProgress[pathKey]?.[level]?.unlocked ?? false)
                   : false;
-                const isLocked = !examType && !isSelectedLevelUnlocked;
+                const isLocked = examType === 'POST_TEST'
+                  ? !(levelProgress?.[pathKey]?.EXPERT?.unlocked ?? false)
+                  : (!examType && !isSelectedLevelUnlocked);
 
                 return (
                   <button
@@ -784,7 +827,7 @@ function PracticeInterfaceContent() {
                     disabled={loading || isLocked}
                     className={`w-full flex items-center justify-center py-3 font-extrabold rounded-xl transition-all shadow-lg ${
                       isLocked
-                        ? 'bg-slate-200 text-slate-450 border border-slate-300 cursor-not-allowed shadow-none'
+                        ? 'bg-slate-200 text-slate-400 border border-slate-300 cursor-not-allowed shadow-none'
                         : 'bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 text-white hover:shadow-teal-500/25 hover:scale-[1.01]'
                     }`}
                   >
@@ -796,9 +839,12 @@ function PracticeInterfaceContent() {
                     ) : isLocked ? (
                       <>
                         <Lock className="w-5 h-5 mr-2 text-slate-400" />
-                        {levelProgress?.[pathKey]?.[level]?.needsPreTest 
-                          ? 'Selesaikan Pre-Test Terlebih Dahulu' 
-                          : 'Level Masih Terkunci'}
+                        {examType === 'POST_TEST'
+                          ? 'Selesaikan Semua Level Terlebih Dahulu'
+                          : (levelProgress?.[pathKey]?.[level]?.needsPreTest 
+                            ? 'Selesaikan Pre-Test Terlebih Dahulu' 
+                            : 'Level Masih Terkunci')
+                        }
                       </>
                     ) : (
                       <>
