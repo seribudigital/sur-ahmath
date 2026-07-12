@@ -15,14 +15,9 @@ export async function GET(request: Request) {
     }
 
     // Find the teacher
-    let teacher = await prisma.teacher.findUnique({
+    const teacher = await prisma.teacher.findUnique({
       where: { userId: teacherUserId },
     });
-
-    // Fallback to first teacher for demo/local testing if needed
-    if (!teacher) {
-      teacher = await prisma.teacher.findFirst();
-    }
 
     if (!teacher) {
       return NextResponse.json({ error: 'Teacher not found' }, { status: 404 });
@@ -81,13 +76,9 @@ export async function POST(request: Request) {
     }
 
     // Find the teacher
-    let teacher = await prisma.teacher.findUnique({
+    const teacher = await prisma.teacher.findUnique({
       where: { userId: teacherUserId },
     });
-
-    if (!teacher) {
-      teacher = await prisma.teacher.findFirst();
-    }
 
     if (!teacher) {
       return NextResponse.json({ error: 'Teacher not found' }, { status: 404 });

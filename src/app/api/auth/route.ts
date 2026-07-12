@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { verifyPassword } from '@/lib/auth-helpers';
 
 export async function POST(request: Request) {
   try {
@@ -60,7 +61,7 @@ export async function POST(request: Request) {
       }
     });
 
-    if (!user || user.passwordHash !== password) {
+    if (!user || !verifyPassword(password, user.passwordHash)) {
       return NextResponse.json(
         { error: 'Email atau password salah' },
         { status: 401 }

@@ -56,7 +56,12 @@ function PracticeInterfaceContent() {
   
   // Input and Timer States
   const [userAnswer, setUserAnswer] = useState('');
-  const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null);
+  const [feedback, setFeedbackState] = useState<'correct' | 'incorrect' | null>(null);
+  const feedbackRef = useRef<'correct' | 'incorrect' | null>(null);
+  const setFeedback = (val: 'correct' | 'incorrect' | null) => {
+    setFeedbackState(val);
+    feedbackRef.current = val;
+  };
   const [timerMs, setTimerMs] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
   const [sessionLogs, setSessionLogs] = useState<any[]>([]);
@@ -74,6 +79,7 @@ function PracticeInterfaceContent() {
   const totalCorrectRef = useRef<number>(0);
   const autoAdvanceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const examStartTimeRef = useRef<number>(0);
+  const handleTimeoutRef = useRef<(limitMs: number) => void>(() => {});
 
   // Keyboard navigation & Auto focus
   const inputRef = useRef<HTMLInputElement>(null);
@@ -342,7 +348,7 @@ function PracticeInterfaceContent() {
 
   // Handle question timeout
   const handleTimeout = (limitMs: number) => {
-    if (feedback !== null) return; // already answered
+    if (feedbackRef.current !== null) return; // already answered
     if (timerRef.current) clearInterval(timerRef.current);
     
     setFeedback('incorrect');
@@ -361,6 +367,7 @@ function PracticeInterfaceContent() {
         operand2: question.operand2,
         userAnswer: -999, // timeout/unanswered
         responseTime: limitMs,
+        practiceMode,
       }),
     }).catch(err => console.error(err));
 
@@ -380,6 +387,7 @@ function PracticeInterfaceContent() {
       handleNextQuestion();
     }, 800);
   };
+  handleTimeoutRef.current = handleTimeout;
 
   // Starts the high precision timer using performance.now()
   const startQuestionTimer = () => {
@@ -408,7 +416,7 @@ function PracticeInterfaceContent() {
 
       // Check if time limit is reached
       if (activeTimeLimit > 0 && elapsed >= activeTimeLimit) {
-        handleTimeout(activeTimeLimit);
+        handleTimeoutRef.current(activeTimeLimit);
       }
     }, 50); // update every 50ms for smooth live updates
   };
@@ -428,10 +436,14 @@ function PracticeInterfaceContent() {
     
     // Server correctness verification simulation locally before API logging
     let correct = false;
-    if (question.operationType === 'MULTIPLICATION') {
-      correct = (question.operand1 * question.operand2) === numericAnswer;
+    if (practiceMode === 'MISSING_NUMBER') {
+      correct = question.operand2 === numericAnswer;
     } else {
-      correct = (question.operand1 / question.operand2) === numericAnswer;
+      if (question.operationType === 'MULTIPLICATION') {
+        correct = (question.operand1 * question.operand2) === numericAnswer;
+      } else {
+        correct = Math.abs((question.operand1 / question.operand2) - numericAnswer) < 0.001;
+      }
     }
 
     if (correct) {
@@ -454,6 +466,7 @@ function PracticeInterfaceContent() {
           operand2: question.operand2,
           userAnswer: numericAnswer,
           responseTime: durationMs, // raw milliseconds
+          practiceMode,
         }),
       });
       const data = await response.json();
@@ -845,6 +858,35 @@ function PracticeInterfaceContent() {
                       })}
                     </div>
                   </div>
+
+                  {/* Practice Mode Selection */}
+                  <div>
+                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-2">Tipe Latihan</label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setPracticeMode('FLASH_DRILL')}
+                        className={`p-3.5 rounded-xl border text-center font-bold transition-all ${
+                          practiceMode === 'FLASH_DRILL'
+                            ? 'border-teal-500 bg-teal-500/5 text-teal-700 shadow-sm font-extrabold'
+                            : 'border-slate-200 hover:border-slate-300 text-slate-600'
+                        }`}
+                      >
+                        Flash Drill (A × B)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPracticeMode('MISSING_NUMBER')}
+                        className={`p-3.5 rounded-xl border text-center font-bold transition-all ${
+                          practiceMode === 'MISSING_NUMBER'
+                            ? 'border-teal-500 bg-teal-500/5 text-teal-700 shadow-sm font-extrabold'
+                            : 'border-slate-200 hover:border-slate-300 text-slate-600'
+                        }`}
+                      >
+                        Missing Number (A × □ = C)
+                      </button>
+                    </div>
+                  </div>
                 </>
               )}
             </CardContent>
@@ -1012,12 +1054,12 @@ function PracticeInterfaceContent() {
                     <div className="relative">
                       <input
                         ref={inputRef}
-                        type="number"
+                        type="text"
                         pattern="[0-9]*"
                         inputMode="numeric"
                         value={userAnswer}
                         readOnly={feedback !== null || loading}
-                        onChange={(e) => setUserAnswer(e.target.value)}
+                        onChange={(e) => setUserAnswer(e.target.value.replace(/[^0-9]/g, ''))}
                         placeholder="Ketik jawaban..."
                         className={`w-full text-center px-4 py-3 text-2xl font-bold rounded-xl border-2 bg-white text-slate-800 transition-all focus:outline-none focus:ring-4 ${
                           feedback === 'correct'

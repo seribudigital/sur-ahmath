@@ -14,7 +14,8 @@ import {
   ChevronRight,
   TrendingUp,
   RotateCcw,
-  LogOut
+  LogOut,
+  Key
 } from 'lucide-react';
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
@@ -178,6 +179,15 @@ function StudentDashboardContent() {
 
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'multiplication' | 'division'>('multiplication');
+  
+  // Ubah Sandi Modal States
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState('');
+  const [passwordSubmitting, setPasswordSubmitting] = useState(false);
   const [profile, setProfile] = useState(MOCK_STUDENT);
   const [metrics, setMetrics] = useState<MetricsGroup>(MOCK_METRICS);
   const [chartData, setChartData] = useState(MOCK_REPORTS_HISTORY);
@@ -428,13 +438,29 @@ function StudentDashboardContent() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between border-b border-slate-700/50 pb-6">
           <div className="flex items-center space-x-4">
-            <a 
-              href="/" 
-              title="Keluar (Logout)"
-              className="p-2 rounded-lg bg-slate-800 text-slate-300 border border-slate-700 hover:text-white hover:bg-rose-950/30 hover:text-rose-450 hover:border-rose-900/50 transition-all flex-shrink-0"
-            >
-              <LogOut className="w-4 h-4" />
-            </a>
+            <div className="flex items-center space-x-2 flex-shrink-0">
+              <button
+                onClick={() => {
+                  setShowPasswordModal(true);
+                  setPasswordError('');
+                  setPasswordSuccess('');
+                  setCurrentPassword('');
+                  setNewPassword('');
+                  setConfirmPassword('');
+                }}
+                title="Ubah Sandi"
+                className="p-2 rounded-lg bg-slate-800 text-slate-300 border border-slate-700 hover:text-white hover:bg-slate-700 transition-all flex-shrink-0 cursor-pointer"
+              >
+                <Key className="w-4 h-4" />
+              </button>
+              <a 
+                href="/" 
+                title="Keluar (Logout)"
+                className="p-2 rounded-lg bg-slate-800 text-slate-300 border border-slate-700 hover:text-white hover:bg-rose-950/30 hover:text-rose-450 hover:border-rose-900/50 transition-all flex-shrink-0"
+              >
+                <LogOut className="w-4 h-4" />
+              </a>
+            </div>
             <div>
               <div className="flex items-center space-x-2 text-teal-400 text-sm font-bold tracking-wider uppercase">
                 <span>Raport Perkembangan Siswa</span>
@@ -904,6 +930,124 @@ function StudentDashboardContent() {
 
         </div>
       </div>
+
+      {/* Ubah Sandi Modal */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-100 overflow-hidden transform transition-all">
+            <div className="p-6 border-b border-slate-100">
+              <h3 className="text-lg font-bold text-slate-800 flex items-center">
+                <Key className="w-5 h-5 text-teal-600 mr-2" />
+                Ubah Sandi Akun Anda
+              </h3>
+              <p className="text-slate-500 text-xs mt-1">Gunakan sandi minimal 6 karakter demi keamanan akun Anda.</p>
+            </div>
+            
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              if (newPassword !== confirmPassword) {
+                setPasswordError('Konfirmasi sandi baru tidak cocok');
+                return;
+              }
+              if (newPassword.length < 6) {
+                setPasswordError('Sandi baru minimal harus 6 karakter');
+                return;
+              }
+              
+              setPasswordSubmitting(true);
+              setPasswordError('');
+              setPasswordSuccess('');
+              
+              try {
+                const res = await fetch('/api/auth/change-password', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    studentId: studentId || '6c49c487-0a33-4815-bb32-112b76bee827', // use buddy's mock studentId as fallback if null
+                    currentPassword,
+                    newPassword
+                  })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                  setPasswordSuccess('Sandi berhasil diperbarui!');
+                  setTimeout(() => setShowPasswordModal(false), 1500);
+                } else {
+                  setPasswordError(data.error || 'Gagal mengubah sandi');
+                }
+              } catch (err) {
+                setPasswordError('Terjadi kesalahan koneksi');
+              } finally {
+                setPasswordSubmitting(false);
+              }
+            }} className="p-6 space-y-4">
+              {passwordError && (
+                <div className="bg-rose-50 text-rose-700 p-3 rounded-lg text-xs font-semibold border border-rose-100">
+                  {passwordError}
+                </div>
+              )}
+              {passwordSuccess && (
+                <div className="bg-emerald-50 text-emerald-700 p-3 rounded-lg text-xs font-semibold border border-emerald-100">
+                  {passwordSuccess}
+                </div>
+              )}
+              
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-500 block">Sandi Lama</label>
+                <input
+                  type="password"
+                  required
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  className="w-full px-3.5 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                  placeholder="Masukkan sandi saat ini"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-500 block">Sandi Baru</label>
+                <input
+                  type="password"
+                  required
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full px-3.5 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                  placeholder="Masukkan sandi baru (min 6 karakter)"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-500 block">Konfirmasi Sandi Baru</label>
+                <input
+                  type="password"
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="w-full px-3.5 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                  placeholder="Ulangi sandi baru"
+                />
+              </div>
+
+              <div className="flex items-center justify-end space-x-3 pt-4 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowPasswordModal(false)}
+                  className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={passwordSubmitting}
+                  className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-xs font-bold transition-all disabled:opacity-50"
+                >
+                  {passwordSubmitting ? 'Menyimpan...' : 'Simpan Sandi'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

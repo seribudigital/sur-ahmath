@@ -244,6 +244,7 @@ export async function POST(request: Request) {
     }
 
     // B. Answer Submission Mode: Check requirements for submitting answers
+    const { practiceMode } = body;
     if (!sessionId || !opTypeParam || operand1 === undefined || operand2 === undefined || userAnswer === undefined || responseTime === undefined) {
       return NextResponse.json(
         { error: 'Missing parameters. Required: sessionId, operationType, operand1, operand2, userAnswer, responseTime' },
@@ -255,13 +256,17 @@ export async function POST(request: Request) {
 
     // Check correctness
     let correct = false;
-    if (operationType === 'MULTIPLICATION') {
-      correct = (operand1 * operand2) === userAnswer;
-    } else if (operationType === 'DIVISION') {
-      if (operand2 === 0) {
-        correct = false;
-      } else {
-        correct = (operand1 / operand2) === userAnswer;
+    if (practiceMode === 'MISSING_NUMBER') {
+      correct = operand2 === userAnswer;
+    } else {
+      if (operationType === 'MULTIPLICATION') {
+        correct = (operand1 * operand2) === userAnswer;
+      } else if (operationType === 'DIVISION') {
+        if (operand2 === 0) {
+          correct = false;
+        } else {
+          correct = Math.abs((operand1 / operand2) - userAnswer) < 0.001;
+        }
       }
     }
 
@@ -289,14 +294,20 @@ export async function POST(request: Request) {
         },
       });
 
-      // 3. Update session stats (duration is updated by converting ms to seconds)
-      const secondsAdded = Math.round(responseTime / 1000);
+      // 3. Update session stats (duration is updated by summing all response times in ms and rounding)
+      const allLogs = await tx.questionLog.findMany({
+        where: { sessionId },
+        select: { responseTime: true }
+      });
+      const totalMs = allLogs.reduce((sum, l) => sum + l.responseTime, 0) + responseTime;
+      const totalSeconds = Math.max(1, Math.round(totalMs / 1000)); // Ensure at least 1s if there's activity
+
       const updatedSession = await tx.practiceSession.update({
         where: { id: sessionId },
         data: {
           totalQuestions: { increment: 1 },
           correctAnswers: correct ? { increment: 1 } : undefined,
-          duration: { increment: secondsAdded },
+          duration: totalSeconds,
         },
       });
 

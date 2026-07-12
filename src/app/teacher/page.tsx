@@ -18,7 +18,8 @@ import {
   Save,
   Check,
   LogOut,
-  Trash2
+  Trash2,
+  Key
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { formatDate } from '@/lib/utils';
@@ -90,6 +91,13 @@ function TeacherDashboardContent() {
 
   // Exam verification state
   const [examLoading, setExamLoading] = useState(false);
+
+  // Reset Password Modal States
+  const [resettingStudent, setResettingStudent] = useState<any>(null);
+  const [resetPasswordVal, setResetPasswordVal] = useState('');
+  const [resetPasswordError, setResetPasswordError] = useState('');
+  const [resetPasswordSuccess, setResetPasswordSuccess] = useState('');
+  const [resetPasswordSubmitting, setResetPasswordSubmitting] = useState(false);
 
   // Tab state
   const [activeTab, setActiveTab] = useState<'roster' | 'settings'>('roster');
@@ -829,7 +837,6 @@ function TeacherDashboardContent() {
                             <div className="font-bold text-slate-800 flex items-center gap-1.5">{student.nama}</div>
                             <div className="text-[10px] text-slate-500 mt-1 space-y-0.5">
                               <div>Email: <span className="font-semibold text-slate-700 select-all">{student.email}</span></div>
-                              <div>Sandi: <span className="font-mono bg-slate-100 px-1 py-0.5 rounded text-slate-700 select-all">{student.password}</span></div>
                             </div>
                             <div className="text-[10px] text-slate-400 mt-1">Kelas {student.kelas} • {student.lastActive}</div>
                           </td>
@@ -970,7 +977,18 @@ function TeacherDashboardContent() {
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-slate-400">Kata Sandi:</span>
-                      <span className="font-semibold font-mono bg-slate-100 px-1.5 py-0.5 rounded select-all text-slate-850">{selectedStudent.password}</span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setResettingStudent(selectedStudent);
+                          setResetPasswordVal('');
+                          setResetPasswordError('');
+                          setResetPasswordSuccess('');
+                        }}
+                        className="px-2.5 py-1 text-[10px] font-bold text-teal-600 bg-teal-50 border border-teal-200 rounded-lg hover:bg-teal-100 transition-colors"
+                      >
+                        Reset Sandi
+                      </button>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-slate-400">Kelas:</span>
@@ -1214,6 +1232,102 @@ function TeacherDashboardContent() {
         </div>
 
       </div>
+      )}
+
+      {/* Reset Password Modal */}
+      {resettingStudent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-100 overflow-hidden transform transition-all">
+            <div className="p-6 border-b border-slate-100">
+              <h3 className="text-lg font-bold text-slate-800 flex items-center">
+                <Key className="w-5 h-5 text-teal-600 mr-2" />
+                Reset Sandi Siswa
+              </h3>
+              <p className="text-slate-500 text-xs mt-1">
+                Menyetel ulang kata sandi untuk siswa: <strong className="text-slate-700">{resettingStudent.nama}</strong>
+              </p>
+            </div>
+            
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              if (resetPasswordVal.length < 6) {
+                setResetPasswordError('Sandi baru minimal harus 6 karakter');
+                return;
+              }
+              
+              setResetPasswordSubmitting(true);
+              setResetPasswordError('');
+              setResetPasswordSuccess('');
+              
+              try {
+                const res = await fetch('/api/teacher/reset-password', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    teacherUserId,
+                    studentId: resettingStudent.id,
+                    newPassword: resetPasswordVal
+                  })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                  setResetPasswordSuccess('Sandi siswa berhasil direset!');
+                  
+                  // Update students state locally so if they fetch again or inspect, they have the updated placeholder
+                  setStudents(prev => prev.map(s => s.id === resettingStudent.id ? { ...s, password: null } : s));
+                  
+                  setTimeout(() => setResettingStudent(null), 1500);
+                } else {
+                  setResetPasswordError(data.error || 'Gagal mereset sandi');
+                }
+              } catch (err) {
+                setResetPasswordError('Terjadi kesalahan koneksi');
+              } finally {
+                setResetPasswordSubmitting(false);
+              }
+            }} className="p-6 space-y-4">
+              {resetPasswordError && (
+                <div className="bg-rose-50 text-rose-700 p-3 rounded-lg text-xs font-semibold border border-rose-100">
+                  {resetPasswordError}
+                </div>
+              )}
+              {resetPasswordSuccess && (
+                <div className="bg-emerald-50 text-emerald-700 p-3 rounded-lg text-xs font-semibold border border-emerald-100">
+                  {resetPasswordSuccess}
+                </div>
+              )}
+              
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-500 block">Sandi Baru Siswa</label>
+                <input
+                  type="text"
+                  required
+                  value={resetPasswordVal}
+                  onChange={(e) => setResetPasswordVal(e.target.value)}
+                  className="w-full px-3.5 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                  placeholder="Masukkan sandi baru (misal: siswa123)"
+                />
+              </div>
+
+              <div className="flex items-center justify-end space-x-3 pt-4 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setResettingStudent(null)}
+                  className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={resetPasswordSubmitting}
+                  className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-xs font-bold transition-all disabled:opacity-50"
+                >
+                  {resetPasswordSubmitting ? 'Menyimpan...' : 'Reset Sandi'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );

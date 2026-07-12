@@ -43,10 +43,23 @@ export async function POST(request: Request) {
       } else if (examType === 'MONITORING') {
         const student = await tx.student.findUnique({
           where: { id: studentId },
-          select: { monitoringStage: true }
+          select: { 
+            monitoringStage: true,
+            teacherId: true
+          }
         });
         const currentStage = student?.monitoringStage ?? 0;
-        const nextStage = Math.min(currentStage + 1, 5);
+        
+        let maxStages = 5;
+        if (student?.teacherId) {
+          const setting = await tx.teacherSetting.findUnique({
+            where: { teacherId: student.teacherId }
+          });
+          if (setting) {
+            maxStages = setting.monitoringStagesCount;
+          }
+        }
+        const nextStage = Math.min(currentStage + 1, maxStages);
 
         await tx.student.update({
           where: { id: studentId },
@@ -108,13 +121,9 @@ export async function PATCH(request: Request) {
       }
 
       // Verify that the user is indeed a teacher
-      let teacher = await prisma.teacher.findUnique({
+      const teacher = await prisma.teacher.findUnique({
         where: { userId: teacherUserId },
       });
-
-      if (!teacher) {
-        teacher = await prisma.teacher.findFirst();
-      }
 
       if (!teacher) {
         return NextResponse.json({ error: 'Unauthorized: User is not registered as a teacher' }, { status: 403 });
@@ -144,19 +153,12 @@ export async function PATCH(request: Request) {
     }
 
     // Verify that the user is indeed a teacher
-    let teacher = await prisma.teacher.findUnique({
+    const teacher = await prisma.teacher.findUnique({
       where: { userId: teacherUserId },
     });
 
     if (!teacher) {
-      teacher = await prisma.teacher.findFirst();
-    }
-
-    if (!teacher) {
-      return NextResponse.json(
-        { error: 'Unauthorized: User is not registered as a teacher' },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: 'Unauthorized: User is not registered as a teacher' }, { status: 403 });
     }
 
     // Update the exam verification status

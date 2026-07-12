@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { Role } from '@prisma/client';
+import { hashPassword } from '@/lib/auth-helpers';
 
 export async function POST(request: Request) {
   try {
@@ -73,7 +74,7 @@ export async function POST(request: Request) {
       const user = await tx.user.create({
         data: {
           email: email.toLowerCase(),
-          passwordHash: password, // Plain string storage per application design
+          passwordHash: hashPassword(password),
           role: Role.STUDENT,
         }
       });

@@ -13,14 +13,10 @@ export async function GET(request: Request) {
 
     // A. Teacher Dashboard Roster Fetch
     if (teacherUserId) {
-      // Find teacher (fallback to first teacher if placeholder is passed)
-      let teacher = await prisma.teacher.findUnique({
+      // Find teacher
+      const teacher = await prisma.teacher.findUnique({
         where: { userId: teacherUserId },
       });
-      
-      if (!teacher) {
-        teacher = await prisma.teacher.findFirst();
-      }
 
       if (!teacher) {
         return NextResponse.json({ error: 'Teacher not found' }, { status: 404 });
@@ -122,7 +118,7 @@ export async function GET(request: Request) {
           nama: s.nama,
           kelas: s.kelas,
           email: s.user.email,
-          password: s.user.passwordHash,
+          password: null, // Removed for security - never return password to frontend
           accuracy,
           speed,
           activeDays,
@@ -449,13 +445,9 @@ export async function PATCH(request: Request) {
     }
 
     // 1. Verify user is a teacher
-    let teacher = await prisma.teacher.findUnique({
+    const teacher = await prisma.teacher.findUnique({
       where: { userId: teacherUserId },
     });
-
-    if (!teacher) {
-      teacher = await prisma.teacher.findFirst();
-    }
 
     if (!teacher) {
       return NextResponse.json(
