@@ -23,7 +23,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const uniformClasses = ['7A', '7B', '7C', '8A', '8B', '8C', '9A', '9B', '10', '11', '12'];
+    const uniformClasses = ['7A', '7B', '8A', '8B', '8C', '9A', '9B', '10', '11', '12'];
     if (!uniformClasses.includes(kelas)) {
       return NextResponse.json(
         { error: 'Pilihan Kelas tidak valid' },

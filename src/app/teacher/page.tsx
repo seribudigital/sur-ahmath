@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { formatDate } from '@/lib/utils';
+import TeacherExamsRecap from './TeacherExamsRecap';
 
 // Default mock teacher user ID for demo/testing
 const DEFAULT_TEACHER_USER_ID = 'teacher-user-id-xyz';
@@ -100,7 +101,7 @@ function TeacherDashboardContent() {
   const [resetPasswordSubmitting, setResetPasswordSubmitting] = useState(false);
 
   // Tab state
-  const [activeTab, setActiveTab] = useState<'roster' | 'settings'>('roster');
+  const [activeTab, setActiveTab] = useState<'roster' | 'recap' | 'settings'>('roster');
 
   // Settings states
   const [settings, setSettings] = useState<any>(null);
@@ -478,7 +479,7 @@ function TeacherDashboardContent() {
       </div>
 
       {/* Tab Selector */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 print:hidden">
         <div className="flex space-x-2 border-b border-slate-200 pb-px">
           <button
             onClick={() => setActiveTab('roster')}
@@ -489,6 +490,16 @@ function TeacherDashboardContent() {
             }`}
           >
             👥 Perkembangan Siswa
+          </button>
+          <button
+            onClick={() => setActiveTab('recap')}
+            className={`px-5 py-2.5 rounded-t-lg font-bold text-xs sm:text-sm transition-all border-b-2 ${
+              activeTab === 'recap'
+                ? 'border-teal-500 text-teal-600 bg-white shadow-sm font-black'
+                : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+            }`}
+          >
+            📈 Rekap Ujian
           </button>
           <button
             onClick={() => setActiveTab('settings')}
@@ -503,7 +514,7 @@ function TeacherDashboardContent() {
         </div>
       </div>
 
-      {activeTab === 'settings' ? (
+      {activeTab === 'settings' && (
         /* Settings Tab UI */
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 space-y-6">
           <Card className="border border-slate-200 shadow-xl overflow-hidden bg-white">
@@ -770,7 +781,9 @@ function TeacherDashboardContent() {
             </CardFooter>
           </Card>
         </div>
-      ) : (
+      )}
+
+      {activeTab === 'roster' && (
         /* Main Grid Container */
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
         
@@ -792,7 +805,7 @@ function TeacherDashboardContent() {
                   className="px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500/10 bg-white font-semibold text-slate-700 cursor-pointer"
                 >
                   <option value="ALL">Semua Kelas</option>
-                  {['7A', '7B', '7C', '8A', '8B', '8C', '9A', '9B', '10', '11', '12'].map((kls) => (
+                  {['7A', '7B', '8A', '8B', '8C', '9A', '9B', '10', '11', '12'].map((kls) => (
                     <option key={kls} value={kls}>Kelas {kls}</option>
                   ))}
                 </select>
@@ -1232,6 +1245,10 @@ function TeacherDashboardContent() {
         </div>
 
       </div>
+      )}
+
+      {activeTab === 'recap' && (
+        <TeacherExamsRecap teacherUserId={teacherUserId} />
       )}
 
       {/* Reset Password Modal */}

@@ -368,7 +368,7 @@ export default function Home() {
                         }}
                       >
                         <option value="" disabled className="bg-slate-950 text-slate-500">Pilih Kelas</option>
-                        {['7A', '7B', '7C', '8A', '8B', '8C', '9A', '9B', '10', '11', '12'].map((kls) => (
+                        {['7A', '7B', '8A', '8B', '8C', '9A', '9B', '10', '11', '12'].map((kls) => (
                           <option key={kls} value={kls} className="bg-slate-950 text-white">Kelas {kls}</option>
                         ))}
                       </select>
