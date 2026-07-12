@@ -384,6 +384,7 @@ export async function GET(request: Request) {
         divisionExpert,
         monitoringStage: student.monitoringStage,
         lastExamDate: student.lastExamDate,
+        uniqueToken: student.uniqueToken,
         teacher: student.teacher ? { nama: student.teacher.nama, school: student.teacher.school } : null,
       },
       settings: {

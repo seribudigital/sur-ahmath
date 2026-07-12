@@ -551,6 +551,15 @@ function StudentDashboardContent() {
                     </p>
                   </div>
                 </div>
+                <a 
+                  href={`/certificate/${studentInfo?.uniqueToken || 'mock'}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center space-x-2 bg-yellow-400 hover:bg-yellow-300 text-teal-950 px-5 py-2.5 rounded-xl font-black text-xs transition duration-200 shadow-md whitespace-nowrap cursor-pointer"
+                >
+                  <Award className="w-4 h-4" />
+                  <span>Lihat Sertifikat Kelulusan</span>
+                </a>
               </div>
             );
           }

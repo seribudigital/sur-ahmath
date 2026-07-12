@@ -24,6 +24,9 @@ const MOCK_STUDENT = {
   kelas: '7A',
   school: 'MTs-MA Al-Khoir Cikande',
   predicate: 'Raja Perkalian',
+  monitoringStage: 5,
+  maxStages: 5,
+  uniqueToken: 'mock-unique-token-xyz-123',
   teacher: {
     nama: 'ahmad novan, S.T',
     school: 'MTs-MA Al-Khoir Cikande',
@@ -138,7 +141,10 @@ export default function ParentPortal({ params }: { params: React.Usable<{ token:
             nama: data.student.nama,
             kelas: data.student.kelas,
             school: data.student.school,
-            predicate: 'Aktif',
+            predicate: data.student.monitoringStage >= (data.settings?.monitoringStagesCount ?? 5) ? 'True Master Numerasi' : 'Aktif',
+            monitoringStage: data.student.monitoringStage,
+            maxStages: data.settings?.monitoringStagesCount ?? 5,
+            uniqueToken: data.student.uniqueToken,
             teacher: data.student.teacher || { nama: 'Belum ditunjuk', school: data.student.school }
           });
         }
@@ -243,6 +249,32 @@ export default function ParentPortal({ params }: { params: React.Usable<{ token:
 
       {/* Main Container */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 print-container">
+        
+        {/* Certificate banner (hidden in print) */}
+        {profile.monitoringStage >= (profile.maxStages ?? 5) && (
+          <div className="no-print bg-gradient-to-r from-emerald-600/90 to-teal-650/90 border border-emerald-400/35 text-white p-5 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 mb-6 shadow-lg backdrop-blur-sm">
+            <div className="flex items-center space-x-3.5">
+              <div className="p-2.5 bg-yellow-400/25 text-yellow-300 rounded-xl border border-yellow-400/30 animate-pulse">
+                <Award className="w-6 h-6 animate-bounce" style={{ animationDuration: '3s' }} />
+              </div>
+              <div>
+                <h3 className="font-extrabold text-sm sm:text-base text-white">🎉 Kelulusan Total True Master Numerasi!</h3>
+                <p className="text-teal-100 text-xs mt-0.5 max-w-xl">
+                  Putra/Putri Anda telah sukses menyelesaikan seluruh tahapan Ujian Monitoring (Spaced Repetition) pada platform Sur&apos;ahmath.
+                </p>
+              </div>
+            </div>
+            <a 
+              href={`/certificate/${profile.uniqueToken || token}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center space-x-2 bg-yellow-400 hover:bg-yellow-300 text-teal-950 font-bold px-4 py-2.5 rounded-xl text-xs transition duration-200 shadow-md whitespace-nowrap cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
+            >
+              <Award className="w-4 h-4" />
+              <span>Buka Sertifikat Kelulusan</span>
+            </a>
+          </div>
+        )}
         
         {/* Verification banner (hidden in print) */}
         <div className="no-print bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 p-4 rounded-xl flex items-center justify-between mb-6 backdrop-blur-sm">
