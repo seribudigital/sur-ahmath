@@ -33,7 +33,7 @@ const INITIAL_STUDENTS_LIST = [
   {
     id: '6c49c487-0a33-4815-bb32-112b76bee827', // Budi's ID
     nama: 'Budi Santoso',
-    kelas: '7-A',
+    kelas: '7A',
     accuracy: 85.4,
     speed: 2.7,
     activeDays: 5,
@@ -47,7 +47,7 @@ const INITIAL_STUDENTS_LIST = [
   {
     id: 'student-id-2',
     nama: 'Siti Rahma',
-    kelas: '7-A',
+    kelas: '7A',
     accuracy: 91.2,
     speed: 2.1,
     activeDays: 6,
@@ -61,7 +61,7 @@ const INITIAL_STUDENTS_LIST = [
   {
     id: 'student-id-3',
     nama: 'Ahmad Fauzi',
-    kelas: '7-A',
+    kelas: '7A',
     accuracy: 62.5,
     speed: 7.1,
     activeDays: 2,
@@ -793,7 +793,9 @@ function TeacherDashboardContent() {
           <Card className="border border-slate-200 shadow-sm overflow-hidden">
             <CardHeader className="pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <CardTitle className="text-xl text-slate-800">Daftar Perkembangan Kelas 7-A</CardTitle>
+                <CardTitle className="text-xl text-slate-800">
+                  {classFilter === 'ALL' ? 'Daftar Perkembangan Semua Kelas' : `Daftar Perkembangan Kelas ${classFilter}`}
+                </CardTitle>
                 <CardDescription>Pilih siswa untuk mengedit catatan evaluasi dan memverifikasi ujian</CardDescription>
               </div>
 
