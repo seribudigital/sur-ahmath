@@ -79,6 +79,7 @@ function TeacherDashboardContent() {
   const teacherUserId = searchParams.get('userId') || DEFAULT_TEACHER_USER_ID;
 
   const [loading, setLoading] = useState(false);
+  const [notification, setNotification] = useState<{ type: 'error' | 'success'; message: string } | null>(null);
   const [students, setStudents] = useState<any[]>([]);
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -128,9 +129,10 @@ function TeacherDashboardContent() {
 
   // Load settings from database
   useEffect(() => {
+    const controller = new AbortController();
     if (!teacherUserId) return;
     setSettingsLoading(true);
-    fetch(`/api/teacher/settings?teacherUserId=${teacherUserId}`)
+    fetch(`/api/teacher/settings?teacherUserId=${teacherUserId}`, { signal: controller.signal })
       .then((res) => res.json())
       .then((data) => {
         if (data.settings) {
@@ -152,15 +154,19 @@ function TeacherDashboardContent() {
           setMonitoringStagesCount(data.settings.monitoringStagesCount ?? 5);
         }
       })
-      .catch((err) => console.error('Failed to fetch settings:', err))
+      .catch((err) => {
+        if (err.name !== 'AbortError') console.error('Failed to fetch settings:', err);
+      })
       .finally(() => setSettingsLoading(false));
+
+    return () => controller.abort();
   }, [teacherUserId]);
 
   const handleSaveSettings = async () => {
     setSettingsLoading(true);
     setSettingsSaveSuccess(false);
     try {
-      const response = await fetch('/api/teacher/settings', {
+      const res = await fetch('/api/teacher/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -181,16 +187,16 @@ function TeacherDashboardContent() {
           monitoringStagesCount,
         }),
       });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to save settings');
+      if (res.ok) {
+        setSettingsSaveSuccess(true);
+        setNotification({ type: 'success', message: 'Pengaturan kustomisasi berhasil disimpan!' });
+      } else {
+        const data = await res.json();
+        setNotification({ type: 'error', message: data.error || 'Gagal menyimpan pengaturan' });
       }
-      setSettings(data.settings);
-      setSettingsSaveSuccess(true);
-      setTimeout(() => setSettingsSaveSuccess(false), 3000);
     } catch (err: any) {
-      console.error('Error saving settings:', err);
-      alert(`Gagal menyimpan pengaturan: ${err.message}`);
+      console.error(err);
+      setNotification({ type: 'error', message: `Gagal menyimpan pengaturan: ${err.message}` });
     } finally {
       setSettingsLoading(false);
     }
@@ -198,8 +204,9 @@ function TeacherDashboardContent() {
 
   // Load roster data from database
   useEffect(() => {
+    const controller = new AbortController();
     setLoading(true);
-    fetch(`/api/reports?teacherUserId=${teacherUserId}`)
+    fetch(`/api/reports?teacherUserId=${teacherUserId}`, { signal: controller.signal })
       .then((res) => res.json())
       .then((data) => {
         if (data.teacher) {
@@ -212,8 +219,12 @@ function TeacherDashboardContent() {
           }
         }
       })
-      .catch((err) => console.error('Failed to fetch students roster:', err))
+      .catch((err) => {
+        if (err.name !== 'AbortError') console.error('Failed to fetch students roster:', err);
+      })
       .finally(() => setLoading(false));
+
+    return () => controller.abort();
   }, [teacherUserId]);
 
   const handleDeleteStudent = async (studentId: string, nama: string) => {
@@ -230,7 +241,7 @@ function TeacherDashboardContent() {
         throw new Error(data.error || 'Gagal menghapus siswa');
       }
 
-      alert(`Akun siswa "${nama}" berhasil dihapus.`);
+      setNotification({ type: 'success', message: `Akun siswa "${nama}" berhasil dihapus.` });
       
       // Refresh list locally
       setStudents(prev => {
@@ -243,7 +254,7 @@ function TeacherDashboardContent() {
       });
     } catch (err: any) {
       console.error('Failed to delete student:', err);
-      alert(`Gagal menghapus siswa: ${err.message}`);
+      setNotification({ type: 'error', message: `Gagal menghapus siswa: ${err.message}` });
     }
   };
 
@@ -298,10 +309,11 @@ function TeacherDashboardContent() {
       }));
 
       setSaveSuccess(true);
+      setNotification({ type: 'success', message: 'Catatan guru berhasil disimpan!' });
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err: any) {
       console.error('Error saving comment:', err);
-      alert(`Gagal menyimpan catatan guru: ${err.message}`);
+      setNotification({ type: 'error', message: `Gagal menyimpan catatan guru: ${err.message}` });
     } finally {
       setSaveLoading(false);
     }
@@ -335,9 +347,10 @@ function TeacherDashboardContent() {
         }
         return s;
       }));
+      setNotification({ type: 'success', message: 'Ujian berhasil diaktifkan untuk siswa!' });
     } catch (err: any) {
       console.error('Error activating exam:', err);
-      alert(`Gagal mengaktifkan ujian: ${err.message}`);
+      setNotification({ type: 'error', message: `Gagal mengaktifkan ujian: ${err.message}` });
     } finally {
       setExamLoading(false);
     }
@@ -370,9 +383,10 @@ function TeacherDashboardContent() {
         }
         return s;
       }));
+      setNotification({ type: 'success', message: 'Ujian berhasil diverifikasi!' });
     } catch (err: any) {
       console.error('Error verifying exam:', err);
-      alert(`Gagal memverifikasi ujian: ${err.message}`);
+      setNotification({ type: 'error', message: `Gagal memverifikasi ujian: ${err.message}` });
     } finally {
       setExamLoading(false);
     }
@@ -435,6 +449,18 @@ function TeacherDashboardContent() {
     <div className="relative z-0 min-h-screen bg-[#f8fafc] text-slate-800 pb-12">
       {/* Background gradient banner */}
       <div className="absolute top-0 left-0 w-full h-[280px] bg-gradient-to-b from-[#0f172a] to-[#1e293b] -z-10" />
+
+      {/* Notification Banner */}
+      {notification && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+          <div className={`p-4 rounded-xl flex items-center justify-between shadow-lg ${
+            notification.type === 'error' ? 'bg-rose-500/90 text-white font-medium' : 'bg-teal-500/90 text-slate-950 font-bold'
+          }`}>
+            <span>{notification.message}</span>
+            <button onClick={() => setNotification(null)} className="text-xs underline ml-4 cursor-pointer">Tutup</button>
+          </div>
+        </div>
+      )}
 
       {/* Header Container */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">

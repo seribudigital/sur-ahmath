@@ -42,6 +42,7 @@ export async function GET(request: Request) {
           user: true, // Fetch user to get email and password hash
           exams: {
             orderBy: { date: 'desc' },
+            take: 20,
           },
           reports: {
             orderBy: { createdAt: 'desc' },
@@ -49,6 +50,7 @@ export async function GET(request: Request) {
           },
           practiceSessions: {
             orderBy: { date: 'desc' },
+            take: 30,
           }
         },
         orderBy: { nama: 'asc' }
@@ -157,10 +159,14 @@ export async function GET(request: Request) {
     }
 
     if (!studentId && !parentToken) {
-      return NextResponse.json(
-        { error: 'Student ID, Parent Token, or Teacher User ID is required' },
-        { status: 400 }
-      );
+      if (session.role === 'STUDENT' && session.studentId) {
+        studentId = session.studentId;
+      } else {
+        return NextResponse.json(
+          { error: 'Student ID, Parent Token, or Teacher User ID is required' },
+          { status: 400 }
+        );
+      }
     }
 
     // Resolve studentId from parentToken if provided
@@ -215,9 +221,11 @@ export async function GET(request: Request) {
       orderBy: { createdAt: 'desc' },
     });
 
-    // Fetch all practice sessions to calculate real-time fallback metrics
+    // Fetch recent practice sessions to calculate real-time fallback metrics
     const sessions = await prisma.practiceSession.findMany({
       where: { studentId, totalQuestions: { gt: 0 } },
+      orderBy: { date: 'desc' },
+      take: 200,
     });
 
     let realTimeStats = null;
@@ -251,10 +259,11 @@ export async function GET(request: Request) {
       };
     };
 
-    // Fetch student exams (ordered by date ascending for chronological chart)
+    // Fetch student exams (ordered by date ascending for chronological chart, limited to recent 100)
     const exams = await prisma.exam.findMany({
       where: { studentId },
       orderBy: { date: 'asc' },
+      take: 100,
     });
 
     const getReportForOp = (opType: any) => {
@@ -499,6 +508,8 @@ export async function PATCH(request: Request) {
       if (rep && rep.accuracy === 0 && sId) {
         const sessions = await prisma.practiceSession.findMany({
           where: { studentId: sId, totalQuestions: { gt: 0 } },
+          orderBy: { date: 'desc' },
+          take: 200,
         });
         if (sessions.length > 0) {
           const validSessions = sessions.filter(p => p.totalQuestions > 0);
@@ -527,6 +538,8 @@ export async function PATCH(request: Request) {
 
       const sessions = await prisma.practiceSession.findMany({
         where: { studentId, totalQuestions: { gt: 0 } },
+        orderBy: { date: 'desc' },
+        take: 200,
       });
       let accuracy = 0.0;
       let speed = 0.0;

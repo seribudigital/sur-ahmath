@@ -1,19 +1,25 @@
 import { PrismaClient, Role, OperationType, ExamType } from '@prisma/client';
+import { hashPassword } from '../src/lib/auth-helpers';
 
 const prisma = new PrismaClient();
 
 async function main() {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('DANGER: Seeding cannot be run in production environment (NODE_ENV=production). It deletes all existing data!');
+  }
   console.log('Start seeding...');
 
   // 1. Clean existing records
   await prisma.user.deleteMany({});
   
+  const defaultPasswordHash = hashPassword('Surahmath123');
+
   // 2. Create Teacher
   const teacherUser = await prisma.user.create({
     data: {
       id: 'teacher-user-id-xyz', // Static User ID matching default/mock
       email: 'admin@surahmath.id',
-      passwordHash: 'Surahmath123',
+      passwordHash: defaultPasswordHash,
       role: Role.TEACHER,
       teacher: {
         create: {
@@ -32,7 +38,7 @@ async function main() {
   const parentUser = await prisma.user.create({
     data: {
       email: 'parent.ahmad@mail.com',
-      passwordHash: 'hashed_password_123',
+      passwordHash: defaultPasswordHash,
       role: Role.PARENT,
       parent: {
         create: {
@@ -50,7 +56,7 @@ async function main() {
   const studentUser = await prisma.user.create({
     data: {
       email: 'siswa.budi@surahmath.id',
-      passwordHash: 'hashed_password_123',
+      passwordHash: defaultPasswordHash,
       role: Role.STUDENT,
       student: {
         create: {

@@ -21,9 +21,6 @@ import {
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { formatResponseTime } from '@/lib/utils';
 
-// Default mock student ID for demo/local testing
-const DEFAULT_STUDENT_ID = '6c49c487-0a33-4815-bb32-112b76bee827';
-
 interface Question {
   operand1: number;
   operand2: number;
@@ -33,12 +30,13 @@ interface Question {
 
 function PracticeInterfaceContent() {
   const searchParams = useSearchParams();
-  const queryStudentId = searchParams.get('studentId') || DEFAULT_STUDENT_ID;
+  const queryStudentId = searchParams.get('studentId') || '';
   const examType = searchParams.get('examType'); // 'DIAGNOSTIC' or 'POST_TEST'
   const queryOperation = searchParams.get('operationType') as 'MULTIPLICATION' | 'DIVISION' | null;
 
   // 1. Session Setup States
   const [studentId, setStudentId] = useState(queryStudentId);
+  const [notification, setNotification] = useState<{ type: 'error' | 'success'; message: string } | null>(null);
   const [inSession, setInSession] = useState(false);
   const [operationType, setOperationType] = useState<'MULTIPLICATION' | 'DIVISION'>(
     queryOperation === 'DIVISION' ? 'DIVISION' : 'MULTIPLICATION'
@@ -254,11 +252,11 @@ function PracticeInterfaceContent() {
     if (examType === 'POST_TEST') {
       const isExpertUnlocked = levelProgress?.[pathKey]?.EXPERT?.unlocked ?? false;
       if (!isExpertUnlocked) {
-        alert('Ujian Akhir Master terkunci! Anda harus menyelesaikan semua tingkatan level latihan terlebih dahulu.');
+        setNotification({ type: 'error', message: 'Ujian Akhir Master terkunci! Anda harus menyelesaikan semua tingkatan level latihan terlebih dahulu.' });
         return;
       }
       if (!examUnlocked) {
-        alert('Ujian Akhir Master belum diaktifkan oleh Guru Anda. Silakan hubungi Guru untuk membuka kunci.');
+        setNotification({ type: 'error', message: 'Ujian Akhir Master belum diaktifkan oleh Guru Anda. Silakan hubungi Guru untuk membuka kunci.' });
         return;
       }
     }
@@ -267,7 +265,7 @@ function PracticeInterfaceContent() {
       const maxStages = settings?.monitoringStagesCount ?? 5;
       const cooldownDays = settings?.monitoringCooldownDays ?? 7;
       if (monitoringStage >= maxStages) {
-        alert('Anda telah menyelesaikan seluruh Ujian Monitoring (True Master)!');
+        setNotification({ type: 'error', message: 'Anda telah menyelesaikan seluruh Ujian Monitoring (True Master)!' });
         return;
       }
       if (lastExamDate) {
@@ -277,7 +275,7 @@ function PracticeInterfaceContent() {
         if ((now - lastExam) < cooldownMs) {
           const remainingMs = cooldownMs - (now - lastExam);
           const remainingDays = Math.ceil(remainingMs / (24 * 60 * 60 * 1000));
-          alert(`Ujian Monitoring terkunci! Silakan tunggu ${remainingDays} hari lagi.`);
+          setNotification({ type: 'error', message: `Ujian Monitoring terkunci! Silakan tunggu ${remainingDays} hari lagi.` });
           return;
         }
       }
@@ -289,9 +287,9 @@ function PracticeInterfaceContent() {
         : false;
       if (!isSelectedLevelUnlocked) {
         if (level === 'BEGINNER') {
-          alert('Jalur latihan ini masih terkunci! Anda harus menyelesaikan Ujian Pre-Test terlebih dahulu.');
+          setNotification({ type: 'error', message: 'Jalur latihan ini masih terkunci! Anda harus menyelesaikan Ujian Pre-Test terlebih dahulu.' });
         } else {
-          alert('Tingkatan level ini masih terkunci! Selesaikan level sebelumnya terlebih dahulu.');
+          setNotification({ type: 'error', message: 'Tingkatan level ini masih terkunci! Selesaikan level sebelumnya terlebih dahulu.' });
         }
         return;
       }
@@ -340,7 +338,7 @@ function PracticeInterfaceContent() {
       // Start Question Clock
       startQuestionTimer();
     } catch (err: any) {
-      alert(`Gagal memulai latihan: ${err.message}`);
+      setNotification({ type: 'error', message: `Gagal memulai latihan: ${err.message}` });
     } finally {
       setLoading(false);
     }
@@ -612,7 +610,7 @@ function PracticeInterfaceContent() {
       examStartTimeRef.current = Date.now();
       startQuestionTimer();
     } catch (err: any) {
-      alert(`Gagal menyiapkan sesi berikutnya: ${err.message}`);
+      setNotification({ type: 'error', message: `Gagal menyiapkan sesi berikutnya: ${err.message}` });
     } finally {
       setLoading(false);
     }
@@ -640,13 +638,13 @@ function PracticeInterfaceContent() {
       const data = await res.json();
       if (res.ok) {
         setExamRequested(true);
-        alert('Permohonan Ujian Akhir Master berhasil dikirim! Silakan hubungi Guru Anda untuk mengaktifkan ujian.');
+        setNotification({ type: 'success', message: 'Permohonan Ujian Akhir Master berhasil dikirim! Silakan hubungi Guru Anda untuk mengaktifkan ujian.' });
       } else {
-        alert(data.error || 'Gagal mengajukan ujian.');
+        setNotification({ type: 'error', message: data.error || 'Gagal mengajukan ujian.' });
       }
     } catch (err) {
       console.error(err);
-      alert('Terjadi kesalahan koneksi saat mengajukan ujian.');
+      setNotification({ type: 'error', message: 'Terjadi kesalahan koneksi saat mengajukan ujian.' });
     } finally {
       setRequestExamLoading(false);
     }
@@ -755,7 +753,7 @@ function PracticeInterfaceContent() {
                     type="button"
                     onClick={() => {
                       if (isPathLockedForPostTest('MULTIPLICATION')) {
-                        alert('Jalur Perkalian belum siap untuk Ujian Akhir Master. Anda harus menyelesaikan tingkatan latihan Perkalian terlebih dahulu.');
+                        setNotification({ type: 'error', message: 'Jalur Perkalian belum siap untuk Ujian Akhir Master. Anda harus menyelesaikan tingkatan latihan Perkalian terlebih dahulu.' });
                         return;
                       }
                       setOperationType('MULTIPLICATION');
@@ -775,7 +773,7 @@ function PracticeInterfaceContent() {
                     type="button"
                     onClick={() => {
                       if (isPathLockedForPostTest('DIVISION')) {
-                        alert('Jalur Pembagian belum siap untuk Ujian Akhir Master. Anda harus menyelesaikan tingkatan latihan Pembagian terlebih dahulu.');
+                        setNotification({ type: 'error', message: 'Jalur Pembagian belum siap untuk Ujian Akhir Master. Anda harus menyelesaikan tingkatan latihan Pembagian terlebih dahulu.' });
                         return;
                       }
                       setOperationType('DIVISION');

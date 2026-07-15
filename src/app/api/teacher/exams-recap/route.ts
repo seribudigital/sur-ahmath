@@ -37,21 +37,38 @@ export async function GET(request: Request) {
       where: { teacherId: teacher.id },
     });
 
-    // Fetch all students under this teacher with their exams sorted by date
+    const page = Math.max(1, Number(searchParams.get('page') || '1'));
+    const limit = Math.min(100, Math.max(1, Number(searchParams.get('limit') || '50')));
+    const skip = (page - 1) * limit;
+
+    const totalStudents = await prisma.student.count({
+      where: { teacherId: teacher.id },
+    });
+
+    // Fetch students under this teacher with pagination
     const students = await prisma.student.findMany({
       where: { teacherId: teacher.id },
       include: {
         exams: {
           orderBy: { date: 'asc' }, // Older to newer to easily identify monitoring stages
+          take: 50,
         },
       },
       orderBy: { nama: 'asc' },
+      skip,
+      take: limit,
     });
 
     return NextResponse.json({
       teacher,
       settings: settings || { monitoringStagesCount: 5 },
       students,
+      pagination: {
+        page,
+        limit,
+        totalStudents,
+        totalPages: Math.ceil(totalStudents / limit),
+      },
     });
   } catch (error: any) {
     console.error('Error fetching exams recap:', error);

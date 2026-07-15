@@ -23,108 +23,19 @@ import MetricCard from '@/components/dashboard/MetricCard';
 import ProgressChart from '@/components/analytics/ProgressChart';
 import { getStatusColorClass, formatDate, formatResponseTime } from '@/lib/utils';
 
-// Premium Mock Data based on PRD Budi Santoso profile
-const MOCK_STUDENT = {
-  nama: 'Budi Santoso',
-  kelas: '7A',
-  school: 'MTs-MA Al-Khoir Cikande',
-  predicate: 'Raja Perkalian',
-  teacher: {
-    nama: 'ahmad novan, S.T',
-    school: 'MTs-MA Al-Khoir Cikande',
-  }
-};
-
-const MOCK_METRICS = {
-  accuracy: {
-    value: '85.4%',
-    subtext: '+20.4% sejak Pre-Test (diagnostik: 65.0%)',
-    trend: { value: '5.4%', isPositive: true }
-  },
-  speed: {
-    value: '2.7 dtk',
-    subtext: '5.5 dtk lebih cepat (diagnostik: 8.2 dtk)',
-    trend: { value: '67.0%', isPositive: true }
-  },
-  activity: {
-    value: '5 hari',
-    subtext: 'Total 42 sesi latihan minggu ini',
-    trend: { value: '2 hari', isPositive: true }
-  }
-};
-
-const MOCK_REPORTS_HISTORY = [
-  { period: 'Pre-Test', accuracy: 65.0, speed: 8.2 },
-  { period: 'Minggu 1', accuracy: 70.2, speed: 6.4 },
-  { period: 'Minggu 2', accuracy: 74.8, speed: 5.1 },
-  { period: 'Minggu 3', accuracy: 79.5, speed: 4.0 },
-  { period: 'Minggu 4', accuracy: 82.1, speed: 3.2 },
-  { period: 'Minggu 5', accuracy: 85.4, speed: 2.7 },
-];
-
-const MOCK_EXAM_LOGS = [
-  { id: '1', date: '2026-06-18', name: 'Mastery Test Level 3', score: 92.0, status: 'LULUS', type: 'MASTERY' },
-  { id: '2', date: '2026-06-12', name: 'Ujian Mingguan W24', score: 86.5, status: 'LULUS', type: 'WEEKLY' },
-  { id: '3', date: '2026-06-05', name: 'Ujian Mingguan W23', score: 78.0, status: 'LULUS', type: 'WEEKLY' },
-  { id: '4', date: '2026-06-01', name: 'Mastery Test Level 2', score: 95.0, status: 'LULUS', type: 'MASTERY' },
-];
-
-// Helper to generate a default 10x10 heatmap grid for Multiplication
-function generateMockHeatmap(opType: 'MULTIPLICATION' | 'DIVISION') {
+// Helper to generate a clean empty 10x10 heatmap grid
+function generateEmptyHeatmap(opType: 'MULTIPLICATION' | 'DIVISION') {
   const cells = [];
   for (let i = 1; i <= 10; i++) {
     for (let j = 1; j <= 10; j++) {
-      let correct = 0;
-      let total = 0;
-      let time = 0;
-      let status: 'master' | 'practice' | 'weak' | 'neutral' = 'neutral';
-
-      // Seed mock values to make it look realistic
-      if (i <= 3 && j <= 8) {
-        // Beginner tables 1-3 (mostly mastered)
-        total = Math.floor(Math.random() * 5) + 3;
-        correct = total;
-        time = Math.floor(Math.random() * 800) + 1200; // fast
-        status = 'master';
-      } else if (i <= 6) {
-        // Intermediate tables 4-6 (some mastered, some practicing, one weak)
-        total = Math.floor(Math.random() * 6) + 2;
-        if (i === 5 && j === 7) {
-          correct = 1;
-          total = 4;
-          time = 6200; // slow
-          status = 'weak';
-        } else {
-          correct = total - (Math.random() > 0.7 ? 1 : 0);
-          time = Math.floor(Math.random() * 1500) + 2000;
-          status = correct / total >= 0.9 && time <= 3000 ? 'master' : 'practice';
-        }
-      } else if (i <= 8) {
-        // Advanced tables 7-8 (practicing and some unattempted)
-        if (Math.random() > 0.3) {
-          total = Math.floor(Math.random() * 4) + 1;
-          correct = total - Math.floor(Math.random() * 2);
-          time = Math.floor(Math.random() * 2500) + 2800;
-          status = correct / total >= 0.9 && time <= 3000 ? 'master' : (correct / total < 0.7 ? 'weak' : 'practice');
-        }
-      } else {
-        // Expert tables 9-10 (mostly unattempted)
-        if (Math.random() > 0.7) {
-          total = Math.floor(Math.random() * 3) + 1;
-          correct = Math.floor(Math.random() * total);
-          time = Math.floor(Math.random() * 3000) + 3500;
-          status = correct / total < 0.7 ? 'weak' : 'practice';
-        }
-      }
-
       cells.push({
         operand1: i,
         operand2: j,
-        correctCount: correct,
-        totalCount: total,
-        accuracy: total > 0 ? Math.round((correct / total) * 100) : 0,
-        avgResponseTime: Math.round(time),
-        status,
+        correctCount: 0,
+        totalCount: 0,
+        accuracy: 0,
+        avgResponseTime: 0,
+        status: 'neutral' as const,
       });
     }
   }
@@ -143,36 +54,6 @@ interface MetricsGroup {
   activity: MetricItem;
 }
 
-// Tab-specific metrics mock data for fallback
-const MOCK_MULTIPLICATION_REPORT = {
-  accuracy: 85.4,
-  speed: 2.7,
-  activityScore: 42,
-};
-
-const MOCK_DIVISION_REPORT = {
-  accuracy: 78.2,
-  speed: 3.5,
-  activityScore: 28,
-};
-
-const MOCK_STUDENT_INFO = {
-  examRequested: false,
-  examUnlocked: false,
-  multiplicationExpert: { passed: false, sessionCount: 1, average: 85 },
-  divisionExpert: { passed: true, sessionCount: 3, average: 92 }
-};
-
-const MOCK_EXAMS = [
-  { id: '1', examType: 'POST_TEST', operationType: 'MULTIPLICATION', score: 92.0, verifiedByGuru: true, date: '2026-06-18' },
-  { id: '2', examType: 'DIAGNOSTIC', operationType: 'MULTIPLICATION', score: 65.0, verifiedByGuru: false, date: '2026-06-01' },
-  { id: '3', examType: 'DIAGNOSTIC', operationType: 'MULTIPLICATION', score: 70.0, verifiedByGuru: false, date: '2026-06-02' },
-  { id: '4', examType: 'DIAGNOSTIC', operationType: 'MULTIPLICATION', score: 75.0, verifiedByGuru: false, date: '2026-06-03' },
-  { id: '5', examType: 'DIAGNOSTIC', operationType: 'DIVISION', score: 60.0, verifiedByGuru: false, date: '2026-06-01' },
-  { id: '6', examType: 'DIAGNOSTIC', operationType: 'DIVISION', score: 68.0, verifiedByGuru: false, date: '2026-06-02' },
-  { id: '7', examType: 'DIAGNOSTIC', operationType: 'DIVISION', score: 72.0, verifiedByGuru: false, date: '2026-06-03' },
-];
-
 function StudentDashboardContent() {
   const searchParams = useSearchParams();
   const studentId = searchParams.get('studentId');
@@ -188,9 +69,13 @@ function StudentDashboardContent() {
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState('');
   const [passwordSubmitting, setPasswordSubmitting] = useState(false);
-  const [profile, setProfile] = useState(MOCK_STUDENT);
-  const [metrics, setMetrics] = useState<MetricsGroup>(MOCK_METRICS);
-  const [chartData, setChartData] = useState(MOCK_REPORTS_HISTORY);
+  const [profile, setProfile] = useState<any>(null);
+  const [metrics, setMetrics] = useState<MetricsGroup>({
+    accuracy: { value: '-', subtext: 'Memuat data...', trend: undefined },
+    speed: { value: '-', subtext: 'Memuat data...', trend: undefined },
+    activity: { value: '-', subtext: 'Memuat data...', trend: undefined }
+  });
+  const [chartData, setChartData] = useState<any[]>([]);
   const [examLogs, setExamLogs] = useState<any[]>([]);
   
   // Real database states
@@ -203,65 +88,36 @@ function StudentDashboardContent() {
     monitoringCooldownDays: 7,
     monitoringStagesCount: 5,
   });
+  const [error, setError] = useState<string | null>(null);
+  const [notification, setNotification] = useState<{ type: 'error' | 'success'; message: string } | null>(null);
 
   const [heatmapData, setHeatmapData] = useState<{
     multiplication: any[];
     division: any[];
   }>({
-    multiplication: [],
-    division: [],
+    multiplication: generateEmptyHeatmap('MULTIPLICATION'),
+    division: generateEmptyHeatmap('DIVISION'),
   });
 
   // Load dashboard data
   useEffect(() => {
-    // Generate default heatmap on mount
-    setHeatmapData({
-      multiplication: generateMockHeatmap('MULTIPLICATION'),
-      division: generateMockHeatmap('DIVISION'),
-    });
-
-    if (!studentId) {
-      setMultiplicationReport(MOCK_MULTIPLICATION_REPORT);
-      setDivisionReport(MOCK_DIVISION_REPORT);
-      setStudentInfo(MOCK_STUDENT_INFO);
-      setExams(MOCK_EXAMS);
-      
-      const mappedExams = MOCK_EXAMS.map((e: any) => {
-        let name = 'Ujian Resmi';
-        if (e.examType === 'DIAGNOSTIC') name = `Ujian Diagnostik Pre-Test (${e.operationType === 'MULTIPLICATION' ? 'Perkalian' : 'Pembagian'})`;
-        else if (e.examType === 'POST_TEST') name = `Ujian Akhir Master (${e.operationType === 'MULTIPLICATION' ? 'Perkalian' : 'Pembagian'})`;
-        
-        let status = e.score >= 70.0 ? 'LULUS' : 'REMEDIAL';
-        return {
-          id: e.id,
-          name,
-          date: e.date,
-          score: e.score,
-          status,
-        };
-      });
-      setExamLogs(mappedExams);
-      return;
-    }
-
-    // Reset to empty states for real database user lookup
-    setMultiplicationReport(null);
-    setDivisionReport(null);
-    setStudentInfo(null);
-    setExams([]);
-    setMetrics({
-      accuracy: { value: '0%', subtext: 'Belum ada data latihan', trend: undefined },
-      speed: { value: '0.0 dtk', subtext: 'Belum ada data latihan', trend: undefined },
-      activity: { value: '0', subtext: 'Belum ada keaktifan', trend: undefined }
-    });
-    setChartData([]);
-    setExamLogs([]);
-    setTeacherComment('Belum ada catatan evaluasi dari guru pengajar.');
-
+    const controller = new AbortController();
     setLoading(true);
-    fetch(`/api/reports?studentId=${studentId}`)
-      .then((res) => res.json())
+    setError(null);
+
+    const url = studentId ? `/api/reports?studentId=${studentId}` : '/api/reports';
+
+    fetch(url, { signal: controller.signal })
+      .then((res) => {
+        if (!res.ok) throw new Error('Gagal memuat data dari server');
+        return res.json();
+      })
       .then((data) => {
+        if (data.error) {
+          setError(data.error);
+          setLoading(false);
+          return;
+        }
         if (data.settings) {
           setSettings(data.settings);
         }
@@ -274,6 +130,8 @@ function StudentDashboardContent() {
             predicate: data.student.teacher ? 'Aktif' : 'Siswa',
             teacher: data.student.teacher || { nama: 'Belum ditunjuk', school: data.student.school }
           });
+        } else {
+          setError('Data siswa tidak ditemukan di sistem.');
         }
         
         if (data.multiplicationReport) {
@@ -335,8 +193,15 @@ function StudentDashboardContent() {
           setExamLogs(mappedExams);
         }
       })
-      .catch((err) => console.error('Failed to fetch real data, using premium mocks', err))
+      .catch((err) => {
+        if (err.name !== 'AbortError') {
+          console.error('Failed to fetch real data:', err);
+          setError('Gagal memuat data dari server. Silakan periksa koneksi atau muat ulang halaman.');
+        }
+      })
       .finally(() => setLoading(false));
+
+    return () => controller.abort();
   }, [studentId]);
 
   // Sync metrics cards when activeTab or reports change
@@ -384,20 +249,46 @@ function StudentDashboardContent() {
           examRequested: data.examRequested,
           examUnlocked: data.examUnlocked,
         }));
+        setNotification({ type: 'success', message: 'Permohonan ujian berhasil dikirim ke Guru!' });
       } else {
-        alert(data.error || 'Gagal mengajukan ujian.');
+        setNotification({ type: 'error', message: data.error || 'Gagal mengajukan ujian.' });
       }
     } catch (err) {
       console.error(err);
-      alert('Terjadi kesalahan koneksi.');
+      setNotification({ type: 'error', message: 'Terjadi kesalahan koneksi saat mengajukan ujian.' });
     }
   };
 
   if (loading) {
     return (
-      <div className="flex h-screen w-full flex-col items-center justify-center bg-slate-50">
-        <Loader2 className="h-10 w-10 animate-spin text-teal-600" />
-        <p className="mt-4 text-sm font-semibold text-slate-600">Memuat Laporan Numerasi...</p>
+      <div className="flex h-screen w-full flex-col items-center justify-center bg-[#0f172a] text-white">
+        <Loader2 className="h-10 w-10 animate-spin text-teal-400" />
+        <p className="mt-4 text-sm font-semibold text-slate-300">Memuat Laporan Numerasi...</p>
+      </div>
+    );
+  }
+
+  if (error || !profile) {
+    return (
+      <div className="flex h-screen w-full flex-col items-center justify-center bg-[#0f172a] text-white p-6 text-center">
+        <div className="max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+          <p className="text-rose-400 font-bold mb-2 text-lg">Gagal Memuat Data</p>
+          <p className="text-slate-400 text-sm mb-6">{error || 'Data siswa tidak ditemukan atau sesi telah berakhir.'}</p>
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={() => window.location.reload()}
+              className="px-5 py-2.5 bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold rounded-xl transition-all shadow-lg shadow-teal-500/20 cursor-pointer"
+            >
+              Muat Ulang
+            </button>
+            <a
+              href="/"
+              className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-xl border border-slate-700 transition-all"
+            >
+              Ke Login
+            </a>
+          </div>
+        </div>
       </div>
     );
   }
@@ -433,6 +324,18 @@ function StudentDashboardContent() {
     <div className="relative z-0 min-h-screen bg-[#f8fafc] text-slate-800 pb-12">
       {/* Background elegant gradient elements */}
       <div className="absolute top-0 left-0 w-full h-[320px] bg-gradient-to-b from-[#0f172a] to-[#1e293b] -z-10" />
+
+      {/* Notification Banner */}
+      {notification && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+          <div className={`p-4 rounded-xl flex items-center justify-between shadow-lg ${
+            notification.type === 'error' ? 'bg-rose-500/90 text-white' : 'bg-teal-500/90 text-slate-950 font-bold'
+          }`}>
+            <span>{notification.message}</span>
+            <button onClick={() => setNotification(null)} className="text-xs underline ml-4 cursor-pointer">Tutup</button>
+          </div>
+        </div>
+      )}
 
       {/* Header Container */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">

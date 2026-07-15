@@ -16,23 +16,6 @@ import {
 } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 
-// Fallback Mock Data matching the database test student
-const MOCK_STUDENT = {
-  nama: 'Budi Santoso',
-  kelas: '7A',
-  school: 'MTs-MA Al-Khoir Cikande',
-  monitoringStage: 5,
-  teacher: {
-    nama: 'ahmad novan, S.T',
-  }
-};
-
-const MOCK_STATS = {
-  accuracy: '94.2%',
-  speed: '1.8 dtk',
-  totalSessions: 42
-};
-
 export default function CertificatePage({ params }: { params: React.Usable<{ token: string }> }) {
   // Unwrap parameters
   const { token } = React.use(params);
@@ -40,27 +23,24 @@ export default function CertificatePage({ params }: { params: React.Usable<{ tok
   const [loading, setLoading] = useState(true);
   const [authorized, setAuthorized] = useState(false);
   const [profile, setProfile] = useState<any>(null);
-  const [stats, setStats] = useState(MOCK_STATS);
+  const [stats, setStats] = useState({
+    accuracy: '-',
+    speed: '-',
+    totalSessions: 0
+  });
   const [copied, setCopied] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
 
   useEffect(() => {
-    if (!token) return;
-
-    if (token === 'mock-unique-token-xyz-123' || token === 'mock') {
-      // Load mock data immediately for preview
-      setTimeout(() => {
-        setProfile(MOCK_STUDENT);
-        setStats(MOCK_STATS);
-        setAuthorized(true);
-        setLoading(false);
-        setShowConfetti(true);
-      }, 800);
+    const controller = new AbortController();
+    if (!token) {
+      setAuthorized(false);
+      setLoading(false);
       return;
     }
 
     setLoading(true);
-    fetch(`/api/reports?parentToken=${token}`)
+    fetch(`/api/reports?parentToken=${token}`, { signal: controller.signal })
       .then((res) => {
         if (!res.ok) throw new Error('Data tidak ditemukan');
         return res.json();
@@ -72,15 +52,14 @@ export default function CertificatePage({ params }: { params: React.Usable<{ tok
           
           setProfile(data.student);
           
-          // Calculate student metrics from reports/sessions if available
-          let accVal = '85.0%';
-          let speedVal = '2.5 dtk';
-          let totalSess = 10;
+          let accVal = '-';
+          let speedVal = '-';
+          let totalSess = 0;
           
           if (data.report) {
             accVal = `${data.report.accuracy.toFixed(1)}%`;
             speedVal = `${data.report.speed.toFixed(1)} dtk`;
-            totalSess = data.report.activityScore ? Math.round(data.report.activityScore) : 10;
+            totalSess = data.report.activityScore ? Math.round(data.report.activityScore) : 0;
           }
           
           setStats({
@@ -101,10 +80,14 @@ export default function CertificatePage({ params }: { params: React.Usable<{ tok
         }
       })
       .catch((err) => {
-        console.error('Error loading certificate data', err);
-        setAuthorized(false);
+        if (err.name !== 'AbortError') {
+          console.error('Error loading certificate data', err);
+          setAuthorized(false);
+        }
       })
       .finally(() => setLoading(false));
+
+    return () => controller.abort();
   }, [token]);
 
   // Handle printing

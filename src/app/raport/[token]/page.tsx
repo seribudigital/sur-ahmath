@@ -18,75 +18,12 @@ import MetricCard from '@/components/dashboard/MetricCard';
 import ProgressChart from '@/components/analytics/ProgressChart';
 import { formatDate, formatResponseTime } from '@/lib/utils';
 
-// Fallback Mock Data matching the database test student
-const MOCK_STUDENT = {
-  nama: 'Budi Santoso',
-  kelas: '7A',
-  school: 'MTs-MA Al-Khoir Cikande',
-  predicate: 'Raja Perkalian',
-  monitoringStage: 5,
-  maxStages: 5,
-  uniqueToken: 'mock-unique-token-xyz-123',
-  teacher: {
-    nama: 'ahmad novan, S.T',
-    school: 'MTs-MA Al-Khoir Cikande',
-  }
-};
-
-const MOCK_METRICS = {
-  accuracy: {
-    value: '85.4%',
-    subtext: 'Akurasi pengerjaan soal latihan',
-    trend: { value: '5.4%', isPositive: true }
-  },
-  speed: {
-    value: '2.7 dtk',
-    subtext: 'Rata-rata kecepatan berhitung',
-    trend: { value: '67.0%', isPositive: true }
-  },
-  activity: {
-    value: '5 hari',
-    subtext: 'Total keaktifan latihan minggu ini',
-    trend: { value: '2 hari', isPositive: true }
-  }
-};
-
-const MOCK_CHART_DATA = [
-  { period: 'Pre-Test', accuracy: 65.0, speed: 8.2 },
-  { period: 'Minggu 1', accuracy: 70.2, speed: 6.4 },
-  { period: 'Minggu 2', accuracy: 74.8, speed: 5.1 },
-  { period: 'Minggu 3', accuracy: 79.5, speed: 4.0 },
-  { period: 'Minggu 4', accuracy: 82.1, speed: 3.2 },
-  { period: 'Minggu 5', accuracy: 85.4, speed: 2.7 },
-];
-
-function generateMockHeatmap() {
+// Helper to generate empty 10x10 heatmap grid
+function generateEmptyHeatmap() {
   const cells = [];
   for (let i = 1; i <= 10; i++) {
     for (let j = 1; j <= 10; j++) {
-      let status: 'master' | 'practice' | 'weak' | 'neutral' = 'neutral';
-      let total = 0;
-      let correct = 0;
-      let time = 0;
-
-      if (i <= 3 && j <= 8) {
-        total = 5;
-        correct = 5;
-        time = 1400;
-        status = 'master';
-      } else if (i <= 6) {
-        total = 4;
-        if (i === 5 && j === 7) {
-          correct = 1;
-          time = 6200;
-          status = 'weak';
-        } else {
-          correct = 3;
-          time = 2200;
-          status = 'practice';
-        }
-      }
-      cells.push({ operand1: i, operand2: j, status, totalCount: total, accuracy: total > 0 ? (correct/total)*100 : 0, avgResponseTime: time });
+      cells.push({ operand1: i, operand2: j, status: 'neutral' as const, totalCount: 0, accuracy: 0, avgResponseTime: 0 });
     }
   }
   return cells;
@@ -108,34 +45,48 @@ export default function ParentPortal({ params }: { params: React.Usable<{ token:
   // Unwrap parameters using React.use() as recommended for newer Next.js versions
   const { token } = React.use(params);
 
-  const [loading, setLoading] = useState(false);
-  const [profile, setProfile] = useState(MOCK_STUDENT);
-  const [metrics, setMetrics] = useState<MetricsGroup>(MOCK_METRICS);
-  const [chartData, setChartData] = useState(MOCK_CHART_DATA);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [profile, setProfile] = useState<any>(null);
+  const [metrics, setMetrics] = useState<MetricsGroup>({
+    accuracy: { value: '-', subtext: 'Memuat data...', trend: undefined },
+    speed: { value: '-', subtext: 'Memuat data...', trend: undefined },
+    activity: { value: '-', subtext: 'Memuat data...', trend: undefined }
+  });
+  const [chartData, setChartData] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'multiplication' | 'division'>('multiplication');
   
   const [heatmapData, setHeatmapData] = useState<{
     multiplication: any[];
     division: any[];
   }>({
-    multiplication: [],
-    division: [],
+    multiplication: generateEmptyHeatmap(),
+    division: generateEmptyHeatmap(),
   });
 
   // Load parent portal data
   useEffect(() => {
-    // Generate default heatmap on mount
-    setHeatmapData({
-      multiplication: generateMockHeatmap(),
-      division: generateMockHeatmap(),
-    });
-
-    if (!token || token === 'mock-unique-token-xyz-123') return;
-
+    const controller = new AbortController();
     setLoading(true);
-    fetch(`/api/reports?parentToken=${token}`)
-      .then((res) => res.json())
+    setError(null);
+
+    if (!token) {
+      setError('Token raport tidak disediakan.');
+      setLoading(false);
+      return;
+    }
+
+    fetch(`/api/reports?parentToken=${token}`, { signal: controller.signal })
+      .then((res) => {
+        if (!res.ok) throw new Error('Gagal memuat data raport');
+        return res.json();
+      })
       .then((data) => {
+        if (data.error) {
+          setError(data.error);
+          setLoading(false);
+          return;
+        }
         if (data.student) {
           setProfile({
             nama: data.student.nama,
@@ -147,6 +98,8 @@ export default function ParentPortal({ params }: { params: React.Usable<{ token:
             uniqueToken: data.student.uniqueToken,
             teacher: data.student.teacher || { nama: 'Belum ditunjuk', school: data.student.school }
           });
+        } else {
+          setError('Data siswa untuk token raport ini tidak ditemukan.');
         }
 
         if (data.report) {
@@ -184,8 +137,15 @@ export default function ParentPortal({ params }: { params: React.Usable<{ token:
           });
         }
       })
-      .catch((err) => console.error('Failed to fetch token data, using default mock data', err))
+      .catch((err) => {
+        if (err.name !== 'AbortError') {
+          console.error('Failed to fetch token data:', err);
+          setError('Gagal memuat raport dari server. Periksa koneksi internet Anda.');
+        }
+      })
       .finally(() => setLoading(false));
+
+    return () => controller.abort();
   }, [token]);
 
   // Handle printing
@@ -195,9 +155,26 @@ export default function ParentPortal({ params }: { params: React.Usable<{ token:
 
   if (loading) {
     return (
-      <div className="flex h-screen w-full flex-col items-center justify-center bg-slate-50">
-        <Loader2 className="h-10 w-10 animate-spin text-teal-600" />
-        <p className="mt-4 text-sm font-semibold text-slate-600">Memuat Dokumen Raport Wali Murid...</p>
+      <div className="flex h-screen w-full flex-col items-center justify-center bg-[#0f172a] text-white">
+        <Loader2 className="h-10 w-10 animate-spin text-teal-400" />
+        <p className="mt-4 text-sm font-semibold text-slate-300">Memuat Dokumen Raport Wali Murid...</p>
+      </div>
+    );
+  }
+
+  if (error || !profile) {
+    return (
+      <div className="flex h-screen w-full flex-col items-center justify-center bg-[#0f172a] text-white p-6 text-center">
+        <div className="max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+          <p className="text-rose-400 font-bold mb-2 text-lg">Raport Tidak Ditemukan</p>
+          <p className="text-slate-400 text-sm mb-6">{error || 'Token akses raport tidak valid atau data siswa telah dihapus.'}</p>
+          <a
+            href="/"
+            className="px-5 py-2.5 bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold rounded-xl transition-all inline-block shadow-lg shadow-teal-500/20"
+          >
+            Kembali ke Beranda
+          </a>
+        </div>
       </div>
     );
   }

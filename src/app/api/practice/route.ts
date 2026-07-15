@@ -27,11 +27,11 @@ export async function GET(request: Request) {
     }
 
     const { searchParams } = new URL(request.url);
-    const studentId = searchParams.get('studentId');
+    let studentId = searchParams.get('studentId') || session.studentId || null;
 
     if (!studentId) {
       return NextResponse.json(
-        { error: 'studentId is required' },
+        { error: 'studentId is required and session does not contain a student ID' },
         { status: 400 }
       );
     }
@@ -231,7 +231,10 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { studentId, sessionId, operationType: opTypeParam, operand1, operand2, userAnswer, responseTime, level } = body;
+    let { studentId, sessionId, operationType: opTypeParam, operand1, operand2, userAnswer, responseTime, level } = body;
+    if (!studentId && authSession.studentId) {
+      studentId = authSession.studentId;
+    }
 
     // A. Start Session Mode: If operand1 is not provided, initialize a new practice session
     if (operand1 === undefined) {
