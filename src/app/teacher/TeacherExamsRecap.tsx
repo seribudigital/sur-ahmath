@@ -201,92 +201,92 @@ export default function TeacherExamsRecap({ teacherUserId }: TeacherExamsRecapPr
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 space-y-6">
       
-      {/* Action panel (Hidden on print) */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 print:hidden">
-        <div>
-          <h2 className="text-2xl font-black text-slate-800 tracking-tight flex items-center">
-            📈 Rekapitulasi Nilai Ujian Siswa
-          </h2>
-          <p className="text-slate-500 text-sm mt-0.5 font-medium">
-            Laporan lengkap nilai ujian pre-test, post-test, dan monitoring siswa per kelas.
-          </p>
+      {/* Action & Filter Header Card (Hidden on print) */}
+      <Card className="border border-slate-200 shadow-sm rounded-xl overflow-hidden bg-white print:hidden">
+        <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-black text-slate-800 tracking-tight flex items-center">
+              📈 Rekapitulasi Nilai Ujian Siswa
+            </h2>
+            <p className="text-slate-500 text-sm mt-0.5 font-medium">
+              Laporan lengkap nilai ujian pre-test, post-test, dan monitoring siswa per kelas.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={handleExportCSV}
+              disabled={filteredStudents.length === 0}
+              className="flex items-center justify-center py-2.5 px-4 bg-teal-50 hover:bg-teal-100 text-teal-700 text-xs font-bold rounded-lg border border-teal-200/60 shadow-sm transition-all hover:scale-[1.01] active:scale-95 disabled:opacity-50 cursor-pointer"
+            >
+              <Download className="w-4 h-4 mr-1.5" />
+              Ekspor CSV
+            </button>
+            
+            <button
+              onClick={handlePrint}
+              disabled={filteredStudents.length === 0}
+              className="flex items-center justify-center py-2.5 px-5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-lg border border-slate-700 shadow-md transition-all hover:scale-[1.01] active:scale-95 disabled:opacity-50 cursor-pointer"
+            >
+              <Printer className="w-4 h-4 mr-1.5" />
+              Cetak Laporan / PDF
+            </button>
+          </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            onClick={handleExportCSV}
-            disabled={filteredStudents.length === 0}
-            className="flex items-center justify-center py-2.5 px-4 bg-teal-50 hover:bg-teal-100 text-teal-700 text-xs font-bold rounded-lg border border-teal-200/60 shadow-sm transition-all hover:scale-[1.01] active:scale-95 disabled:opacity-50"
-          >
-            <Download className="w-4 h-4 mr-1.5" />
-            Ekspor CSV
-          </button>
-          
-          <button
-            onClick={handlePrint}
-            disabled={filteredStudents.length === 0}
-            className="flex items-center justify-center py-2.5 px-5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-lg border border-slate-700 shadow-md transition-all hover:scale-[1.01] active:scale-95 disabled:opacity-50"
-          >
-            <Printer className="w-4 h-4 mr-1.5" />
-            Cetak Laporan / PDF
-          </button>
-        </div>
-      </div>
+        <div className="bg-slate-50/60 p-4 flex flex-col md:flex-row items-center gap-4">
+          {/* Search */}
+          <div className="relative w-full md:w-72">
+            <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Cari nama siswa..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 font-medium placeholder-slate-400 bg-white"
+            />
+          </div>
 
-      {/* Filter panel (Hidden on print) */}
-      <div className="bg-white border border-slate-100 rounded-xl p-4 shadow-sm flex flex-col md:flex-row items-center gap-4 print:hidden">
-        
-        {/* Search */}
-        <div className="relative w-full md:w-72">
-          <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Cari nama siswa..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 font-medium placeholder-slate-400"
-          />
-        </div>
+          {/* Class Filter */}
+          <div className="flex items-center space-x-2 w-full md:w-auto">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Kelas:</span>
+            <select
+              value={classFilter}
+              onChange={(e) => setClassFilter(e.target.value)}
+              className="w-full md:w-auto px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500/10 bg-white font-semibold text-slate-700 cursor-pointer"
+            >
+              <option value="ALL">Semua Kelas</option>
+              {classes.map((kls) => (
+                <option key={kls} value={kls}>Kelas {kls}</option>
+              ))}
+            </select>
+          </div>
 
-        {/* Class Filter */}
-        <div className="flex items-center space-x-2 w-full md:w-auto">
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Kelas:</span>
-          <select
-            value={classFilter}
-            onChange={(e) => setClassFilter(e.target.value)}
-            className="w-full md:w-auto px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500/10 bg-white font-semibold text-slate-700 cursor-pointer"
-          >
-            <option value="ALL">Semua Kelas</option>
-            {classes.map((kls) => (
-              <option key={kls} value={kls}>Kelas {kls}</option>
-            ))}
-          </select>
+          {/* Operation Selector */}
+          <div className="flex bg-slate-200/70 p-1 rounded-lg border border-slate-300/50 w-full md:w-auto ml-auto">
+            <button
+              onClick={() => setOperationTab('MULTIPLICATION')}
+              className={`flex-1 md:flex-initial px-4 py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer ${
+                operationTab === 'MULTIPLICATION'
+                  ? 'bg-white text-slate-800 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              ✖️ Perkalian
+            </button>
+            <button
+              onClick={() => setOperationTab('DIVISION')}
+              className={`flex-1 md:flex-initial px-4 py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer ${
+                operationTab === 'DIVISION'
+                  ? 'bg-white text-slate-800 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              ➕ Pembagian
+            </button>
+          </div>
         </div>
-
-        {/* Operation Selector */}
-        <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200/50 w-full md:w-auto ml-auto">
-          <button
-            onClick={() => setOperationTab('MULTIPLICATION')}
-            className={`flex-1 md:flex-initial px-4 py-1.5 text-xs font-bold rounded-md transition-all ${
-              operationTab === 'MULTIPLICATION'
-                ? 'bg-white text-slate-800 shadow-sm'
-                : 'text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            ✖️ Perkalian
-          </button>
-          <button
-            onClick={() => setOperationTab('DIVISION')}
-            className={`flex-1 md:flex-initial px-4 py-1.5 text-xs font-bold rounded-md transition-all ${
-              operationTab === 'DIVISION'
-                ? 'bg-white text-slate-800 shadow-sm'
-                : 'text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            ➕ Pembagian
-          </button>
-        </div>
-      </div>
+      </Card>
 
       {/* Printable Report Title & Header (Visible ONLY on print) */}
       <div className="hidden print:block mb-8 font-serif">

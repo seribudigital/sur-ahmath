@@ -513,33 +513,33 @@ function TeacherDashboardContent() {
 
       {/* Tab Selector */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 print:hidden">
-        <div className="flex space-x-2 border-b border-slate-200 pb-px">
+        <div className="flex space-x-2 border-b border-slate-700/60 pb-px">
           <button
             onClick={() => setActiveTab('roster')}
-            className={`px-5 py-2.5 rounded-t-lg font-bold text-xs sm:text-sm transition-all border-b-2 ${
+            className={`px-5 py-2.5 rounded-t-lg font-bold text-xs sm:text-sm transition-all border-b-2 cursor-pointer ${
               activeTab === 'roster'
-                ? 'border-teal-500 text-teal-600 bg-white shadow-sm font-black'
-                : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                ? 'border-teal-400 text-teal-600 bg-white shadow-sm font-black'
+                : 'border-transparent text-slate-300 hover:text-white hover:bg-slate-800/80'
             }`}
           >
             👥 Perkembangan Siswa
           </button>
           <button
             onClick={() => setActiveTab('recap')}
-            className={`px-5 py-2.5 rounded-t-lg font-bold text-xs sm:text-sm transition-all border-b-2 ${
+            className={`px-5 py-2.5 rounded-t-lg font-bold text-xs sm:text-sm transition-all border-b-2 cursor-pointer ${
               activeTab === 'recap'
-                ? 'border-teal-500 text-teal-600 bg-white shadow-sm font-black'
-                : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                ? 'border-teal-400 text-teal-600 bg-white shadow-sm font-black'
+                : 'border-transparent text-slate-300 hover:text-white hover:bg-slate-800/80'
             }`}
           >
             📈 Rekap Ujian
           </button>
           <button
             onClick={() => setActiveTab('settings')}
-            className={`px-5 py-2.5 rounded-t-lg font-bold text-xs sm:text-sm transition-all border-b-2 ${
+            className={`px-5 py-2.5 rounded-t-lg font-bold text-xs sm:text-sm transition-all border-b-2 cursor-pointer ${
               activeTab === 'settings'
-                ? 'border-teal-500 text-teal-600 bg-white shadow-sm font-black'
-                : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                ? 'border-teal-400 text-teal-600 bg-white shadow-sm font-black'
+                : 'border-transparent text-slate-300 hover:text-white hover:bg-slate-800/80'
             }`}
           >
             ⚙️ Pengaturan Soal & Waktu
