@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { OperationType, ExamType } from '@prisma/client';
+import { getSession } from '@/lib/auth';
 
 // Helper to determine max table number based on student level
 function getMaxTableForLevel(level: string): number {
@@ -20,6 +21,11 @@ function getMaxTableForLevel(level: string): number {
 // GET: Generate adaptive random questions or check progress
 export async function GET(request: Request) {
   try {
+    const session = await getSession(request);
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized: Sesi tidak valid' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const studentId = searchParams.get('studentId');
 
@@ -28,6 +34,13 @@ export async function GET(request: Request) {
         { error: 'studentId is required' },
         { status: 400 }
       );
+    }
+
+    if (session.role === 'STUDENT' && session.studentId !== studentId) {
+      return NextResponse.json({ error: 'Forbidden: Anda hanya dapat berlatih dengan ID Anda sendiri.' }, { status: 403 });
+    }
+    if (session.role === 'PARENT' && session.studentId !== studentId) {
+      return NextResponse.json({ error: 'Forbidden: Anda tidak dapat mengakses latihan siswa lain.' }, { status: 403 });
     }
 
     const checkProgress = searchParams.get('checkProgress') === 'true';
@@ -203,7 +216,7 @@ export async function GET(request: Request) {
   } catch (error: any) {
     console.error('Error generating questions:', error);
     return NextResponse.json(
-      { error: 'Internal Server Error', details: error.message },
+      { error: 'Terjadi kesalahan pada server saat membuat pertanyaan.' },
       { status: 500 }
     );
   }
@@ -212,6 +225,11 @@ export async function GET(request: Request) {
 // POST: Log answer and update session stats atomically
 export async function POST(request: Request) {
   try {
+    const authSession = await getSession(request);
+    if (!authSession) {
+      return NextResponse.json({ error: 'Unauthorized: Sesi tidak valid' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { studentId, sessionId, operationType: opTypeParam, operand1, operand2, userAnswer, responseTime, level } = body;
 
@@ -222,6 +240,10 @@ export async function POST(request: Request) {
           { error: 'studentId and operationType are required to initialize a session' },
           { status: 400 }
         );
+      }
+
+      if (authSession.role === 'STUDENT' && authSession.studentId !== studentId) {
+        return NextResponse.json({ error: 'Forbidden: Anda hanya dapat memulai sesi untuk diri sendiri.' }, { status: 403 });
       }
 
       const operationType = opTypeParam.toUpperCase() as OperationType;
@@ -281,6 +303,10 @@ export async function POST(request: Request) {
         throw new Error(`Practice session with ID ${sessionId} not found`);
       }
 
+      if (authSession.role === 'STUDENT' && authSession.studentId !== session.studentId) {
+        throw new Error('Forbidden: Session ID ini bukan milik Anda');
+      }
+
       // 2. Insert new question log (responseTime is saved directly in ms)
       const log = await tx.questionLog.create({
         data: {
@@ -335,7 +361,9 @@ export async function POST(request: Request) {
   } catch (error: any) {
     console.error('Error submitting answer:', error);
     
-    // Check if error is due to session not found (status 404)
+    if (error.message && error.message.includes('Forbidden')) {
+      return NextResponse.json({ error: error.message }, { status: 403 });
+    }
     if (error.message && error.message.includes('not found')) {
       return NextResponse.json(
         { error: error.message },
@@ -344,7 +372,7 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json(
-      { error: 'Internal Server Error', details: error.message },
+      { error: 'Terjadi kesalahan pada server saat mengirim jawaban.' },
       { status: 500 }
     );
   }

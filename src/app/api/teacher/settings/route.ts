@@ -1,9 +1,15 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { getSession } from '@/lib/auth';
 
 // GET: Retrieve teacher settings. If they don't exist yet, initialize them with defaults.
 export async function GET(request: Request) {
   try {
+    const session = await getSession(request);
+    if (!session || (session.role !== 'TEACHER' && session.role !== 'ADMIN')) {
+      return NextResponse.json({ error: 'Forbidden: Hanya Guru atau Admin' }, { status: 403 });
+    }
+
     const { searchParams } = new URL(request.url);
     const teacherUserId = searchParams.get('teacherUserId');
 
@@ -12,6 +18,10 @@ export async function GET(request: Request) {
         { error: 'teacherUserId is required' },
         { status: 400 }
       );
+    }
+
+    if (session.role === 'TEACHER' && session.id !== teacherUserId) {
+      return NextResponse.json({ error: 'Forbidden: Tidak dapat mengakses pengaturan guru lain' }, { status: 403 });
     }
 
     // Find the teacher
@@ -40,7 +50,7 @@ export async function GET(request: Request) {
   } catch (error: any) {
     console.error('Error fetching teacher settings:', error);
     return NextResponse.json(
-      { error: 'Internal Server Error', details: error.message },
+      { error: 'Terjadi kesalahan pada server saat mengambil pengaturan.' },
       { status: 500 }
     );
   }
@@ -49,6 +59,11 @@ export async function GET(request: Request) {
 // POST: Save or update teacher settings
 export async function POST(request: Request) {
   try {
+    const session = await getSession(request);
+    if (!session || (session.role !== 'TEACHER' && session.role !== 'ADMIN')) {
+      return NextResponse.json({ error: 'Forbidden: Hanya Guru atau Admin' }, { status: 403 });
+    }
+
     const body = await request.json();
     const {
       teacherUserId,
@@ -73,6 +88,10 @@ export async function POST(request: Request) {
         { error: 'teacherUserId is required' },
         { status: 400 }
       );
+    }
+
+    if (session.role === 'TEACHER' && session.id !== teacherUserId) {
+      return NextResponse.json({ error: 'Forbidden: Tidak dapat mengubah pengaturan guru lain' }, { status: 403 });
     }
 
     // Find the teacher
@@ -129,7 +148,7 @@ export async function POST(request: Request) {
   } catch (error: any) {
     console.error('Error saving teacher settings:', error);
     return NextResponse.json(
-      { error: 'Internal Server Error', details: error.message },
+      { error: 'Terjadi kesalahan pada server saat menyimpan pengaturan.' },
       { status: 500 }
     );
   }

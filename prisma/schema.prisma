@@ -100,6 +100,9 @@ model Student {
   exams            Exam[]
   reports          Report[]
 
+  @@index([teacherId, nama])
+  @@index([parentId])
+  @@index([school, kelas])
   @@map("students")
 }
 
@@ -118,6 +121,9 @@ model PracticeSession {
   student      Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
   questionLogs QuestionLog[]
 
+  @@index([studentId, date])
+  @@index([studentId, operationType, level])
+  @@index([studentId, totalQuestions])
   @@map("practice_sessions")
 }
 
@@ -135,9 +141,10 @@ model QuestionLog {
   // Relations
   session PracticeSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
-  // Indexes to optimize querying for the 10x10 Mastery Heatmap
+  // Indexes to optimize querying for the 10x10 Mastery Heatmap and session analytics
   @@index([operand1, operand2])
   @@index([sessionId, correct])
+  @@index([sessionId, operationType])
   @@map("question_logs")
 }
 
@@ -157,6 +164,9 @@ model Exam {
   // Relations
   student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
+  @@index([studentId, date])
+  @@index([studentId, examType, operationType])
+  @@index([studentId, verifiedByGuru])
   @@map("exams")
 }
 
@@ -174,6 +184,8 @@ model Report {
   // Relations
   student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
+  @@index([studentId, createdAt])
+  @@index([studentId, period])
   @@map("reports")
 }
 

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { verifyPassword } from '@/lib/auth-helpers';
+import { signAuthToken, setSessionCookie, SessionPayload } from '@/lib/auth';
 
 export async function POST(request: Request) {
   try {
@@ -37,12 +38,24 @@ export async function POST(request: Request) {
         );
       }
       
-      return NextResponse.json({
+      const payload: SessionPayload = {
+        id: student.parentId || student.id,
         role: 'PARENT',
         token: student.uniqueToken,
+        studentId: student.id,
         name: student.parent?.nama || 'Wali Murid',
+      };
+
+      const tokenString = await signAuthToken(payload);
+      const resData = {
+        role: 'PARENT',
+        token: student.uniqueToken,
+        name: payload.name,
         studentId: student.id
-      });
+      };
+
+      const response = NextResponse.json(resData);
+      return setSessionCookie(response, tokenString);
     }
 
     // B. Email/Password Login for Siswa & Guru
@@ -68,13 +81,26 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json({
+    const payload: SessionPayload = {
+      id: user.id,
+      email: user.email,
+      role: user.role as any,
+      name: user.role === 'STUDENT' ? user.student?.nama : (user.role === 'TEACHER' ? user.teacher?.nama : 'User'),
+      studentId: user.student?.id || null,
+      teacherId: user.teacher?.id || null,
+    };
+
+    const tokenString = await signAuthToken(payload);
+    const resData = {
       id: user.id,
       email: user.email,
       role: user.role,
-      name: user.role === 'STUDENT' ? user.student?.nama : (user.role === 'TEACHER' ? user.teacher?.nama : 'User'),
+      name: payload.name,
       studentId: user.student?.id || null
-    });
+    };
+
+    const response = NextResponse.json(resData);
+    return setSessionCookie(response, tokenString);
   } catch (error: any) {
     console.error('Auth Error:', error);
     return NextResponse.json(
@@ -83,3 +109,4 @@ export async function POST(request: Request) {
     );
   }
 }
+

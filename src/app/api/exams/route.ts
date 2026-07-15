@@ -1,9 +1,15 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { getSession } from '@/lib/auth';
 
 // POST: Save exam results
 export async function POST(request: Request) {
   try {
+    const session = await getSession(request);
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized: Sesi tidak valid' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { studentId, examType, operationType, score, duration, totalQuestions } = body;
 
@@ -12,6 +18,18 @@ export async function POST(request: Request) {
         { error: 'Missing required exam parameters' },
         { status: 400 }
       );
+    }
+
+    if (typeof score !== 'number' || score < 0 || score > 100) {
+      return NextResponse.json({ error: 'Nilai ujian tidak valid (harus antara 0 - 100)' }, { status: 400 });
+    }
+
+    // IDOR Protection: Siswa hanya bisa menyimpan nilai untuk dirinya sendiri
+    if (session.role === 'STUDENT' && session.studentId !== studentId) {
+      return NextResponse.json({ error: 'Forbidden: Anda hanya dapat menyimpan nilai ujian Anda sendiri.' }, { status: 403 });
+    }
+    if (session.role === 'PARENT') {
+      return NextResponse.json({ error: 'Forbidden: Wali murid tidak dapat menyimpan nilai ujian.' }, { status: 403 });
     }
 
     // Determine status_remedial: passing score is 90% for all exams
@@ -27,8 +45,8 @@ export async function POST(request: Request) {
           score,
           statusRemedial,
           verifiedByGuru: examType === 'MONITORING' ? true : false,
-          duration,
-          totalQuestions,
+          duration: typeof duration === 'number' ? duration : null,
+          totalQuestions: typeof totalQuestions === 'number' ? totalQuestions : null,
         },
       });
 
@@ -59,29 +77,39 @@ export async function POST(request: Request) {
             maxStages = setting.monitoringStagesCount;
           }
         }
-        const nextStage = Math.min(currentStage + 1, maxStages);
 
-        await tx.student.update({
-          where: { id: studentId },
-          data: {
-            monitoringStage: nextStage,
-            lastExamDate: new Date(),
-          },
-        });
+        if (score >= 90.0) {
+          const nextStage = Math.min(maxStages, currentStage + 1);
+          await tx.student.update({
+            where: { id: studentId },
+            data: {
+              monitoringStage: nextStage,
+              lastExamDate: new Date(),
+            },
+          });
+        } else {
+          await tx.student.update({
+            where: { id: studentId },
+            data: {
+              lastExamDate: new Date(),
+            },
+          });
+        }
       }
 
       return exam;
     });
 
     return NextResponse.json({
-      message: 'Exam saved successfully',
+      message: 'Exam results saved successfully',
       examId: result.id,
+      score: result.score,
       statusRemedial: result.statusRemedial,
     });
   } catch (error: any) {
     console.error('Error saving exam:', error);
     return NextResponse.json(
-      { error: 'Internal Server Error', details: error.message },
+      { error: 'Terjadi kesalahan pada server saat menyimpan ujian.' },
       { status: 500 }
     );
   }
@@ -90,6 +118,11 @@ export async function POST(request: Request) {
 // PATCH: Verify exam or handle lock/unlock requests
 export async function PATCH(request: Request) {
   try {
+    const session = await getSession(request);
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized: Sesi tidak valid' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { examId, teacherUserId, studentId, action } = body;
 
@@ -97,6 +130,12 @@ export async function PATCH(request: Request) {
     if (action === 'REQUEST_EXAM') {
       if (!studentId) {
         return NextResponse.json({ error: 'Student ID is required' }, { status: 400 });
+      }
+      if (session.role === 'STUDENT' && session.studentId !== studentId) {
+        return NextResponse.json({ error: 'Forbidden: Anda hanya dapat mengajukan ujian untuk diri sendiri.' }, { status: 403 });
+      }
+      if (session.role === 'PARENT') {
+        return NextResponse.json({ error: 'Forbidden: Wali murid tidak dapat mengajukan ujian.' }, { status: 403 });
       }
       
       const updatedStudent = await prisma.student.update({
@@ -114,7 +153,14 @@ export async function PATCH(request: Request) {
       });
     }
 
-    // B. Teacher Unlocking/Approving Exam for Student
+    // B. Teacher Unlocking/Approving Exam for Student or Verifying Exam
+    if (session.role !== 'TEACHER' && session.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Forbidden: Hanya Guru atau Admin yang dapat melakukan aksi ini.' }, { status: 403 });
+    }
+    if (session.role === 'TEACHER' && teacherUserId && session.id !== teacherUserId) {
+      return NextResponse.json({ error: 'Forbidden: Tidak dapat mengatasnamakan guru lain.' }, { status: 403 });
+    }
+
     if (action === 'UNLOCK_EXAM') {
       if (!studentId || !teacherUserId) {
         return NextResponse.json({ error: 'Student ID and Teacher User ID are required' }, { status: 400 });
@@ -188,7 +234,7 @@ export async function PATCH(request: Request) {
   } catch (error: any) {
     console.error('Error verifying exam:', error);
     return NextResponse.json(
-      { error: 'Internal Server Error', details: error.message },
+      { error: 'Terjadi kesalahan pada server saat memverifikasi ujian.' },
       { status: 500 }
     );
   }

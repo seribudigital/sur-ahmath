@@ -453,13 +453,20 @@ function StudentDashboardContent() {
               >
                 <Key className="w-4 h-4" />
               </button>
-              <a 
-                href="/" 
+              <button 
+                onClick={async () => {
+                  try {
+                    await fetch('/api/auth/logout', { method: 'POST' });
+                  } catch (e) {
+                    console.error('Logout error:', e);
+                  }
+                  window.location.href = '/';
+                }}
                 title="Keluar (Logout)"
-                className="p-2 rounded-lg bg-slate-800 text-slate-300 border border-slate-700 hover:text-white hover:bg-rose-950/30 hover:text-rose-450 hover:border-rose-900/50 transition-all flex-shrink-0"
+                className="p-2 rounded-lg bg-slate-800 text-slate-300 border border-slate-700 hover:text-white hover:bg-rose-950/30 hover:text-rose-450 hover:border-rose-900/50 transition-all flex-shrink-0 cursor-pointer"
               >
                 <LogOut className="w-4 h-4" />
-              </a>
+              </button>
             </div>
             <div>
               <div className="flex items-center space-x-2 text-teal-400 text-sm font-bold tracking-wider uppercase">

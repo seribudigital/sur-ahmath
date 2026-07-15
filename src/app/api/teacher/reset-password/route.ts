@@ -1,9 +1,15 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { hashPassword } from '@/lib/auth-helpers';
+import { getSession } from '@/lib/auth';
 
 export async function POST(request: Request) {
   try {
+    const session = await getSession(request);
+    if (!session || (session.role !== 'TEACHER' && session.role !== 'ADMIN')) {
+      return NextResponse.json({ error: 'Forbidden: Hanya Guru atau Admin' }, { status: 403 });
+    }
+
     const body = await request.json();
     const { teacherUserId, studentId, newPassword } = body;
 
@@ -12,6 +18,10 @@ export async function POST(request: Request) {
         { error: 'ID Guru, ID Siswa, dan sandi baru wajib diisi' },
         { status: 400 }
       );
+    }
+
+    if (session.role === 'TEACHER' && session.id !== teacherUserId) {
+      return NextResponse.json({ error: 'Forbidden: Tidak dapat mengatasnamakan guru lain' }, { status: 403 });
     }
 
     if (newPassword.length < 6) {
@@ -33,7 +43,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // 2. Fetch the student to get the associated userId
+    // 2. Fetch the student to get the associated userId and teacherId
     const student = await prisma.student.findUnique({
       where: { id: studentId }
     });
@@ -43,6 +53,10 @@ export async function POST(request: Request) {
         { error: 'Data siswa tidak ditemukan' },
         { status: 404 }
       );
+    }
+
+    if (session.role === 'TEACHER' && student.teacherId !== teacher.id) {
+      return NextResponse.json({ error: 'Forbidden: Anda hanya dapat mereset sandi siswa di bawah bimbingan Anda.' }, { status: 403 });
     }
 
     // 3. Update the student's password
@@ -66,3 +80,4 @@ export async function POST(request: Request) {
     );
   }
 }
+

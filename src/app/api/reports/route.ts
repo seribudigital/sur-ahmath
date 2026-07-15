@@ -1,10 +1,16 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getMasteryHeatmap } from '@/lib/db-helpers';
+import { getSession } from '@/lib/auth';
 
 // GET: Retrieve student report card (Accuracy, Speed, Heatmap, and comments)
 export async function GET(request: Request) {
   try {
+    const session = await getSession(request);
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized: Sesi tidak valid' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     let studentId = searchParams.get('studentId');
     const parentToken = searchParams.get('parentToken');
@@ -13,6 +19,13 @@ export async function GET(request: Request) {
 
     // A. Teacher Dashboard Roster Fetch
     if (teacherUserId) {
+      if (session.role !== 'TEACHER' && session.role !== 'ADMIN') {
+        return NextResponse.json({ error: 'Forbidden: Hanya Guru atau Admin' }, { status: 403 });
+      }
+      if (session.role === 'TEACHER' && session.id !== teacherUserId) {
+        return NextResponse.json({ error: 'Forbidden: Tidak dapat mengakses data guru lain' }, { status: 403 });
+      }
+
       // Find teacher
       const teacher = await prisma.teacher.findUnique({
         where: { userId: teacherUserId },
@@ -171,6 +184,14 @@ export async function GET(request: Request) {
         { error: 'Student ID could not be resolved' },
         { status: 400 }
       );
+    }
+
+    // IDOR Protection: Siswa dan Wali Murid hanya boleh mengakses studentId mereka sendiri
+    if (session.role === 'STUDENT' && session.studentId !== studentId) {
+      return NextResponse.json({ error: 'Akses ditolak: Anda hanya dapat mengakses data Anda sendiri.' }, { status: 403 });
+    }
+    if (session.role === 'PARENT' && !parentToken && session.studentId !== studentId) {
+      return NextResponse.json({ error: 'Akses ditolak: Anda hanya dapat mengakses laporan anak Anda.' }, { status: 403 });
     }
 
     // Fetch student profile
@@ -424,9 +445,8 @@ export async function GET(request: Request) {
       })),
     });
   } catch (error: any) {
-    console.error('Error fetching report:', error);
     return NextResponse.json(
-      { error: 'Internal Server Error', details: error.message },
+      { error: 'Terjadi kesalahan pada server saat mengambil laporan.' },
       { status: 500 }
     );
   }
@@ -435,6 +455,11 @@ export async function GET(request: Request) {
 // PATCH: Add or update teacher's comment on a report
 export async function PATCH(request: Request) {
   try {
+    const session = await getSession(request);
+    if (!session || (session.role !== 'TEACHER' && session.role !== 'ADMIN')) {
+      return NextResponse.json({ error: 'Forbidden: Hanya Guru yang dapat memberikan komentar.' }, { status: 403 });
+    }
+
     const body = await request.json();
     const { reportId, studentId, teacherUserId, comment } = body;
 
@@ -443,6 +468,10 @@ export async function PATCH(request: Request) {
         { error: 'Report ID or Student ID, Teacher User ID and Comment are required' },
         { status: 400 }
       );
+    }
+
+    if (session.role === 'TEACHER' && session.id !== teacherUserId) {
+      return NextResponse.json({ error: 'Forbidden: Tidak dapat mengatasnamakan guru lain.' }, { status: 403 });
     }
 
     // 1. Verify user is a teacher
@@ -540,10 +569,11 @@ export async function PATCH(request: Request) {
       teacherComment: updatedReport.teacherComment,
     });
   } catch (error: any) {
-    console.error('Error updating comment:', error);
+    console.error('Update Comment Error:', error);
     return NextResponse.json(
-      { error: 'Internal Server Error', details: error.message },
+      { error: 'Terjadi kesalahan pada server saat memperbarui komentar.' },
       { status: 500 }
     );
   }
 }
+

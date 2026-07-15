@@ -1,9 +1,15 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { hashPassword, verifyPassword } from '@/lib/auth-helpers';
+import { getSession } from '@/lib/auth';
 
 export async function POST(request: Request) {
   try {
+    const session = await getSession(request);
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized: Sesi tidak valid' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { studentId, currentPassword, newPassword } = body;
 
@@ -12,6 +18,10 @@ export async function POST(request: Request) {
         { error: 'ID Siswa, sandi lama, dan sandi baru wajib diisi' },
         { status: 400 }
       );
+    }
+
+    if (session.role === 'STUDENT' && session.studentId !== studentId) {
+      return NextResponse.json({ error: 'Forbidden: Anda hanya dapat mengubah sandi Anda sendiri.' }, { status: 403 });
     }
 
     if (newPassword.length < 6) {
@@ -64,3 +74,4 @@ export async function POST(request: Request) {
     );
   }
 }
+
