@@ -16,7 +16,8 @@ import {
   TrendingUp,
   Award,
   Lock,
-  Loader2
+  Loader2,
+  Keyboard
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { VirtualNumpad } from '@/components/ui/VirtualNumpad';
@@ -55,6 +56,7 @@ function PracticeInterfaceContent() {
   
   // Input and Timer States
   const [userAnswer, setUserAnswer] = useState('');
+  const [useNativeKeyboard, setUseNativeKeyboard] = useState(false);
   const [feedback, setFeedbackState] = useState<'correct' | 'incorrect' | null>(null);
   const feedbackRef = useRef<'correct' | 'incorrect' | null>(null);
   const setFeedback = (val: 'correct' | 'incorrect' | null) => {
@@ -1063,12 +1065,26 @@ function PracticeInterfaceContent() {
 
                   {/* Form Input & Built-in Virtual Numpad */}
                   <form onSubmit={handleSubmitOrNext} className="w-full max-w-[320px]">
+                    <div className="flex items-center justify-between mb-1.5 px-1">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                        {useNativeKeyboard ? 'Keyboard HP Aktif' : 'Keyboard Web Aktif'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setUseNativeKeyboard((prev) => !prev)}
+                        className="text-[10px] font-extrabold text-teal-600 hover:text-teal-700 flex items-center space-x-1 transition-colors bg-teal-50 px-2 py-0.5 rounded-full border border-teal-200/60"
+                      >
+                        <Keyboard className="w-3 h-3" />
+                        <span>{useNativeKeyboard ? 'Gunakan Keyboard Web' : 'Gunakan Keyboard HP'}</span>
+                      </button>
+                    </div>
+
                     <div className="relative mb-3">
                       <input
                         ref={inputRef}
                         type="text"
                         pattern="[0-9]*"
-                        inputMode="numeric"
+                        inputMode={useNativeKeyboard ? 'numeric' : 'none'}
                         value={userAnswer}
                         readOnly={feedback !== null || loading}
                         onChange={(e) => setUserAnswer(e.target.value.replace(/[^0-9]/g, ''))}
