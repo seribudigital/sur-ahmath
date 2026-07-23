@@ -339,70 +339,87 @@ function StudentDashboardContent() {
       )}
 
       {/* Header Container */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between border-b border-slate-700/50 pb-6">
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2 flex-shrink-0">
-              <button
-                onClick={() => {
-                  setShowPasswordModal(true);
-                  setPasswordError('');
-                  setPasswordSuccess('');
-                  setCurrentPassword('');
-                  setNewPassword('');
-                  setConfirmPassword('');
-                }}
-                title="Ubah Sandi"
-                className="p-2 rounded-lg bg-slate-800 text-slate-300 border border-slate-700 hover:text-white hover:bg-slate-700 transition-all flex-shrink-0 cursor-pointer"
-              >
-                <Key className="w-4 h-4" />
-              </button>
-              <button 
-                onClick={async () => {
-                  try {
-                    await fetch('/api/auth/logout', { method: 'POST' });
-                  } catch (e) {
-                    console.error('Logout error:', e);
-                  }
-                  window.location.href = '/';
-                }}
-                title="Keluar (Logout)"
-                className="p-2 rounded-lg bg-slate-800 text-slate-300 border border-slate-700 hover:text-white hover:bg-rose-950/30 hover:text-rose-450 hover:border-rose-900/50 transition-all flex-shrink-0 cursor-pointer"
-              >
-                <LogOut className="w-4 h-4" />
-              </button>
-            </div>
-            <div>
-              <div className="flex items-center space-x-2 text-teal-400 text-sm font-bold tracking-wider uppercase">
-                <span>Raport Perkembangan Siswa</span>
-                <span>•</span>
-                <span>Sur'ahMath</span>
-              </div>
-              <h1 className="text-3xl font-extrabold text-white mt-1 tracking-tight">{profile.nama}</h1>
-              <div className="flex flex-wrap items-center mt-2 gap-y-2 text-slate-300 text-sm">
-                <span className="bg-slate-800 px-2.5 py-0.5 rounded border border-slate-700 mr-3">Kelas {profile.kelas}</span>
-                <span className="mr-3">{profile.school}</span>
-                <span className="flex items-center text-teal-300 font-semibold bg-teal-500/10 px-2.5 py-0.5 rounded border border-teal-500/20">
-                  <Award className="w-4 h-4 mr-1 text-teal-400" />
-                  {profile.predicate}
-                </span>
-              </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+        {/* Top Navbar Row */}
+        <div className="flex items-center justify-between pb-4 border-b border-slate-700/50">
+          <div className="flex items-center space-x-2">
+            <span className="text-xs font-black tracking-widest uppercase bg-gradient-to-r from-teal-400 to-emerald-400 bg-clip-text text-transparent">
+              SUR'AHMATH
+            </span>
+            <span className="text-slate-600">•</span>
+            <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider">
+              Raport Siswa
+            </span>
+          </div>
+
+          {/* Quick Actions (Top Right) */}
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => {
+                setShowPasswordModal(true);
+                setPasswordError('');
+                setPasswordSuccess('');
+                setCurrentPassword('');
+                setNewPassword('');
+                setConfirmPassword('');
+              }}
+              title="Ubah Sandi"
+              className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/80 transition-all cursor-pointer flex items-center space-x-1.5 text-xs font-semibold"
+            >
+              <Key className="w-3.5 h-3.5 text-teal-400" />
+              <span className="hidden sm:inline">Ubah Sandi</span>
+            </button>
+            <button 
+              onClick={async () => {
+                try {
+                  await fetch('/api/auth/logout', { method: 'POST' });
+                } catch (e) {
+                  console.error('Logout error:', e);
+                }
+                window.location.href = '/';
+              }}
+              title="Keluar (Logout)"
+              className="p-2 rounded-xl bg-slate-800/80 hover:bg-rose-950/40 text-slate-300 hover:text-rose-400 border border-slate-700/80 hover:border-rose-800/50 transition-all cursor-pointer flex items-center space-x-1.5 text-xs font-semibold"
+            >
+              <LogOut className="w-3.5 h-3.5 text-slate-400 hover:text-rose-400" />
+              <span className="hidden sm:inline">Keluar</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Hero Profile Banner */}
+        <div className="py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="space-y-1">
+            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight capitalize">
+              {profile.nama}
+            </h1>
+            <div className="flex flex-wrap items-center gap-2 pt-0.5 text-xs text-slate-300">
+              <span className="bg-slate-800/90 text-slate-200 px-2.5 py-1 rounded-lg border border-slate-700/80 font-bold">
+                Kelas {profile.kelas}
+              </span>
+              <span className="text-slate-400 font-medium">
+                {profile.school}
+              </span>
+              <span className="inline-flex items-center text-teal-300 font-bold bg-teal-500/10 px-2.5 py-1 rounded-lg border border-teal-500/20">
+                <Award className="w-3.5 h-3.5 mr-1 text-teal-400" />
+                {profile.predicate}
+              </span>
             </div>
           </div>
-          
-          <div className="mt-4 md:mt-0 flex space-x-3">
+
+          <div className="flex items-center space-x-3 pt-1 sm:pt-0">
             {currentHasPreTest ? (
               <a 
                 href={studentId ? `/practice?operationType=${currentOp}&studentId=${studentId}` : `/practice?operationType=${currentOp}`} 
-                className="inline-flex items-center justify-center px-4 py-2.5 rounded-lg text-sm font-bold text-white bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 transition-all shadow-lg hover:shadow-teal-500/20 hover:scale-[1.02]"
+                className="w-full sm:w-auto inline-flex items-center justify-center px-5 py-2.5 rounded-xl text-xs font-black text-white bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 transition-all shadow-lg hover:shadow-teal-500/20 hover:scale-[1.02]"
               >
                 <BookOpen className="w-4 h-4 mr-2" />
-                Mulai Latihan
+                Mulai Latihan Mandiri
               </a>
             ) : (
               <a 
                 href={studentId ? `/practice?examType=DIAGNOSTIC&operationType=${currentOp}&studentId=${studentId}` : `/practice?examType=DIAGNOSTIC&operationType=${currentOp}`} 
-                className="inline-flex items-center justify-center px-4 py-2.5 rounded-lg text-sm font-bold text-white bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-700 hover:to-rose-600 transition-all shadow-lg hover:shadow-rose-500/20 hover:scale-[1.02]"
+                className="w-full sm:w-auto inline-flex items-center justify-center px-5 py-2.5 rounded-xl text-xs font-black text-white bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-700 hover:to-rose-600 transition-all shadow-lg hover:shadow-rose-500/20 hover:scale-[1.02]"
               >
                 <BookOpen className="w-4 h-4 mr-2" />
                 Mulai Ujian Pre-Test
@@ -476,39 +493,36 @@ function StudentDashboardContent() {
           }
 
           return (
-            <div className="bg-gradient-to-r from-teal-950/80 to-slate-900/80 border-2 border-teal-500/30 text-teal-300 p-6 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-6 backdrop-blur-sm shadow-xl">
-              <div className="flex-1 space-y-3">
-                <div className="flex items-center space-x-2.5">
-                  <span className="bg-teal-500/10 text-teal-300 border border-teal-500/20 px-2.5 py-0.5 rounded text-[10px] font-black tracking-widest uppercase">
+            <div className="bg-gradient-to-r from-teal-950/80 to-slate-900/80 border border-teal-500/30 text-teal-300 p-4 sm:p-5 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 backdrop-blur-sm shadow-xl">
+              <div className="flex-1 space-y-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="bg-teal-500/10 text-teal-300 border border-teal-500/20 px-2 py-0.5 rounded text-[10px] font-black tracking-widest uppercase">
                     Fase Monitoring ({mStage}/{maxStages})
                   </span>
-                  <span className="text-slate-500">•</span>
+                  <span className="text-slate-500 text-xs">•</span>
                   <span className="text-slate-400 text-xs font-semibold">Spaced Repetition</span>
                 </div>
                 <div>
-                  <h3 className="font-extrabold text-white text-base">
+                  <h3 className="font-extrabold text-white text-sm sm:text-base">
                     {isCooldownActive 
-                      ? `⏳ Ujian Monitoring Berikutnya (Stage ${mStage + 1}/${maxStages}) Terkunci` 
-                      : `🚀 Siap untuk Ujian Monitoring (Stage ${mStage + 1}/${maxStages})`
+                      ? `⏳ Ujian Monitoring Stage ${mStage + 1}/${maxStages} (Terkunci)` 
+                      : `🚀 Siap untuk Ujian Monitoring Stage ${mStage + 1}/${maxStages}`
                     }
                   </h3>
-                  <p className="text-slate-400 text-xs mt-1 leading-relaxed max-w-2xl">
+                  <p className="text-slate-400 text-xs mt-0.5 leading-relaxed max-w-xl">
                     {isCooldownActive 
-                      ? `Untuk memastikan retensi memori jangka panjang, ujian dikunci selama ${cooldownDays} hari. Masa tunggu berakhir dalam: ${remainingDays} hari ${remainingHours} jam ${remainingMinutes} menit.` 
-                      : `Jeda waktu ${cooldownDays} hari telah terpenuhi! Silakan klik tombol di samping untuk menempuh Ujian Monitoring Anda secara mandiri.`
+                      ? `Sisa masa tunggu: ${remainingDays} hari ${remainingHours} jam ${remainingMinutes} menit. (Latihan Mandiri tetap terbuka)` 
+                      : `Jeda waktu ${cooldownDays} hari terpenuhi! Silakan tempuh Ujian Monitoring Anda.`
                     }
-                  </p>
-                  <p className="text-[10px] text-teal-400/80 mt-1 italic">
-                    Catatan: Jalur Latihan Mandiri tetap terbuka bebas untuk belajar kapan saja selama masa tunggu.
                   </p>
                 </div>
 
                 {/* Progress dot indicator */}
-                <div className="flex items-center space-x-2 pt-1">
+                <div className="flex items-center space-x-1.5 pt-1">
                   {Array.from({ length: maxStages }).map((_, idx) => (
                     <div 
                       key={idx} 
-                      className={`h-2 w-8 rounded-full border ${
+                      className={`h-1.5 w-7 rounded-full border ${
                         idx < mStage 
                           ? 'bg-emerald-500 border-emerald-600 shadow-sm shadow-emerald-500/20' 
                           : idx === mStage && !isCooldownActive
@@ -520,21 +534,21 @@ function StudentDashboardContent() {
                 </div>
               </div>
 
-              <div>
+              <div className="pt-1 md:pt-0">
                 {isCooldownActive ? (
                   <button
                     disabled
-                    className="inline-flex items-center justify-center px-5 py-3 rounded-xl text-xs font-black text-slate-500 bg-slate-800/80 border border-slate-700/60 cursor-not-allowed whitespace-nowrap"
+                    className="w-full md:w-auto inline-flex items-center justify-center px-4 py-2.5 rounded-xl text-xs font-black text-slate-400 bg-slate-800/80 border border-slate-700/60 cursor-not-allowed whitespace-nowrap"
                   >
-                    <ShieldAlert className="w-4 h-4 mr-2" />
+                    <ShieldAlert className="w-3.5 h-3.5 mr-1.5" />
                     Cooldown {cooldownDays} Hari
                   </button>
                 ) : (
                   <a
                     href={studentId ? `/practice?examType=MONITORING&operationType=${currentOp}&studentId=${studentId}` : `/practice?examType=MONITORING&operationType=${currentOp}`}
-                    className="inline-flex items-center justify-center px-5 py-3 rounded-xl text-xs font-black text-white bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 transition-all shadow-lg hover:shadow-teal-500/20 hover:scale-[1.02] whitespace-nowrap"
+                    className="w-full md:w-auto inline-flex items-center justify-center px-4 py-2.5 rounded-xl text-xs font-black text-white bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 transition-all shadow-lg hover:shadow-teal-500/20 hover:scale-[1.02] whitespace-nowrap"
                   >
-                    <BookOpen className="w-4 h-4 mr-2" />
+                    <BookOpen className="w-3.5 h-3.5 mr-1.5" />
                     Mulai Ujian Monitoring ({mStage + 1}/{maxStages})
                   </a>
                 )}
