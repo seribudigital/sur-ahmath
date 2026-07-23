@@ -19,6 +19,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
+import { VirtualNumpad } from '@/components/ui/VirtualNumpad';
 import { formatResponseTime } from '@/lib/utils';
 
 interface Question {
@@ -1060,9 +1061,9 @@ function PracticeInterfaceContent() {
                     {renderQuestionString(questions[currentIdx])}
                   </div>
 
-                  {/* Form Input for userAnswer */}
-                  <form onSubmit={handleSubmitOrNext} className="w-full max-w-[280px]">
-                    <div className="relative">
+                  {/* Form Input & Built-in Virtual Numpad */}
+                  <form onSubmit={handleSubmitOrNext} className="w-full max-w-[320px]">
+                    <div className="relative mb-3">
                       <input
                         ref={inputRef}
                         type="text"
@@ -1071,8 +1072,8 @@ function PracticeInterfaceContent() {
                         value={userAnswer}
                         readOnly={feedback !== null || loading}
                         onChange={(e) => setUserAnswer(e.target.value.replace(/[^0-9]/g, ''))}
-                        placeholder="Ketik jawaban..."
-                        className={`w-full text-center px-4 py-3 text-2xl font-bold rounded-xl border-2 bg-white text-slate-800 transition-all focus:outline-none focus:ring-4 ${
+                        placeholder="Jawaban..."
+                        className={`w-full text-center px-4 py-3 text-2xl font-bold rounded-2xl border-2 bg-white text-slate-800 transition-all focus:outline-none focus:ring-4 ${
                           feedback === 'correct'
                             ? 'border-emerald-500 focus:ring-emerald-500/10 focus:border-emerald-500'
                             : feedback === 'incorrect'
@@ -1092,7 +1093,7 @@ function PracticeInterfaceContent() {
 
                     {/* Feedback Panel */}
                     {feedback && (
-                      <div className="mt-4 text-center animate-fade-in">
+                      <div className="mb-4 text-center animate-fade-in">
                         {feedback === 'correct' ? (
                           <p className="text-sm font-bold text-emerald-600">Hebat! Jawaban Anda Benar.</p>
                         ) : (
@@ -1106,28 +1107,37 @@ function PracticeInterfaceContent() {
                       </div>
                     )}
 
-                    {/* Actions Button */}
-                    <div className="mt-6">
-                      {feedback === null ? (
-                        <button
-                          type="submit"
-                          disabled={userAnswer.trim() === '' || loading}
-                          className="w-full py-3 bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 text-white font-bold rounded-xl shadow-md hover:shadow-teal-500/20 disabled:opacity-50 transition-all text-sm uppercase tracking-wider"
-                        >
-                          Kirim Jawaban
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={handleNextQuestion}
-                          disabled={loading}
-                          className="w-full py-3 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl shadow-md transition-all text-sm flex items-center justify-center disabled:opacity-50"
-                        >
-                          <span>Lanjut</span>
-                          <ChevronRight className="w-4 h-4 ml-1" />
-                        </button>
-                      )}
-                    </div>
+                    {/* Web Built-in Numpad */}
+                    <VirtualNumpad
+                      userAnswer={userAnswer}
+                      disabled={loading}
+                      isFeedbackActive={feedback !== null}
+                      onDigitPress={(digit) => {
+                        setUserAnswer((prev) => {
+                          if (prev.length >= 6) return prev;
+                          return prev + digit;
+                        });
+                      }}
+                      onBackspace={() => {
+                        setUserAnswer((prev) => prev.slice(0, -1));
+                      }}
+                      onClear={() => {
+                        setUserAnswer('');
+                      }}
+                      onSubmit={() => {
+                        if (feedback === null) {
+                          if (userAnswer.trim() !== '') {
+                            handleSubmitAnswer();
+                          }
+                        } else {
+                          if (autoAdvanceTimerRef.current) {
+                            clearTimeout(autoAdvanceTimerRef.current);
+                            autoAdvanceTimerRef.current = null;
+                          }
+                          handleNextQuestion();
+                        }
+                      }}
+                    />
                   </form>
                 </CardContent>
               </>
