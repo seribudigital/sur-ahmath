@@ -1107,21 +1107,21 @@ function PracticeInterfaceContent() {
                       )}
                     </div>
 
-                    {/* Feedback Panel */}
-                    {feedback && (
-                      <div className="mb-4 text-center animate-fade-in">
-                        {feedback === 'correct' ? (
-                          <p className="text-sm font-bold text-emerald-600">Hebat! Jawaban Anda Benar.</p>
-                        ) : (
-                          <p className="text-sm font-bold text-rose-600">
-                            Salah. Jawaban yang benar: {' '}
-                            <span className="underline font-extrabold text-base">
-                              {questions[currentIdx].expectedAnswer}
-                            </span>
-                          </p>
-                        )}
-                      </div>
-                    )}
+                    {/* Reserved Fixed-Height Feedback Panel to prevent keyboard layout shift */}
+                    <div className="h-9 mb-2 flex items-center justify-center text-center">
+                      {feedback === 'correct' ? (
+                        <p className="text-sm font-bold text-emerald-600 animate-fade-in">Hebat! Jawaban Anda Benar.</p>
+                      ) : feedback === 'incorrect' ? (
+                        <p className="text-sm font-bold text-rose-600 animate-fade-in">
+                          Salah. Jawaban yang benar: {' '}
+                          <span className="underline font-extrabold text-base">
+                            {questions[currentIdx].expectedAnswer}
+                          </span>
+                        </p>
+                      ) : (
+                        <span className="text-xs text-transparent select-none" aria-hidden="true">&nbsp;</span>
+                      )}
+                    </div>
 
                     {/* Web Built-in Numpad */}
                     <VirtualNumpad
