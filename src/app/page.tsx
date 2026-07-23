@@ -318,15 +318,52 @@ export default function Home() {
                   
                   <button
                     type="button"
-                    onClick={() => {
+                    disabled={loading}
+                    onClick={async () => {
+                      const targetEmail = regSuccess.email;
+                      const targetPassword = regSuccess.password;
                       setIsRegisterOpen(false);
                       setRegSuccess(null);
-                      setEmail(regSuccess.email); // Auto-fill email
-                      setPassword(regSuccess.password); // Auto-fill password
+                      setEmail(targetEmail);
+                      setPassword(targetPassword);
+                      
+                      setLoading(true);
+                      setError(null);
+                      try {
+                        const response = await fetch('/api/auth', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ email: targetEmail, password: targetPassword })
+                        });
+                        const data = await response.json();
+
+                        if (!response.ok) {
+                          throw new Error(data.error || 'Terjadi kesalahan saat login.');
+                        }
+
+                        if (data.role === 'STUDENT') {
+                          router.push(`/dashboard?studentId=${data.studentId}`);
+                        } else if (data.role === 'TEACHER') {
+                          router.push(`/teacher?userId=${data.id}`);
+                        } else {
+                          throw new Error('Peran akun tidak dikenali.');
+                        }
+                      } catch (err: any) {
+                        setError(err.message);
+                      } finally {
+                        setLoading(false);
+                      }
                     }}
-                    className="w-full py-2.5 bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 text-white text-xs font-extrabold rounded-xl transition-all shadow-lg hover:shadow-teal-500/25"
+                    className="w-full py-2.5 bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 text-white text-xs font-extrabold rounded-xl transition-all shadow-lg hover:shadow-teal-500/25 flex items-center justify-center cursor-pointer disabled:opacity-50"
                   >
-                    Masuk Sekarang
+                    {loading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Memproses Login...
+                      </>
+                    ) : (
+                      'Masuk Sekarang ke Dashboard'
+                    )}
                   </button>
                 </div>
               ) : (
