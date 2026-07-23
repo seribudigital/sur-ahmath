@@ -454,6 +454,7 @@ export async function GET(request: Request) {
       })),
     });
   } catch (error: any) {
+    console.error('Fetch Report Error:', error);
     return NextResponse.json(
       { error: 'Terjadi kesalahan pada server saat mengambil laporan.' },
       { status: 500 }
