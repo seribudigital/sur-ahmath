@@ -408,39 +408,6 @@ async function getUnlockedLevels(studentId: string) {
     };
   };
 
-  const checkProgressForOp = async (opType: OperationType) => {
-    // Check if Pre-Test (Diagnostic exam) is completed (at least 3 attempts) for this operation type
-    const preTestCount = await prisma.exam.count({
-      where: {
-        studentId,
-        examType: ExamType.DIAGNOSTIC,
-        operationType: opType
-      }
-    });
-    const preTestCompleted = preTestCount >= 3;
-
-    const beginner = await getLevelProgress(opType, 'BEGINNER');
-    const intermediate = await getLevelProgress(opType, 'INTERMEDIATE');
-    const advanced = await getLevelProgress(opType, 'ADVANCED');
-    const expert = await getLevelProgress(opType, 'EXPERT');
-
-    // ALL levels (including BEGINNER) are locked if Pre-Test is not completed!
-    const beginnerUnlocked = preTestCompleted;
-    const intermediateUnlocked = beginnerUnlocked && beginner.passed;
-    const advancedUnlocked = intermediateUnlocked && intermediate.passed;
-    const expertUnlocked = advancedUnlocked && advanced.passed;
-
-    return {
-      BEGINNER: { unlocked: beginnerUnlocked, progress: beginner, needsPreTest: !preTestCompleted },
-      INTERMEDIATE: { unlocked: intermediateUnlocked, progress: intermediate },
-      ADVANCED: { unlocked: advancedUnlocked, progress: advanced },
-      EXPERT: { unlocked: expertUnlocked, progress: expert }
-    };
-  };
-
-  const multiplication = await checkProgressForOp(OperationType.MULTIPLICATION);
-  const division = await checkProgressForOp(OperationType.DIVISION);
-
   // Fetch teacher settings for the student
   const student = await prisma.student.findUnique({
     where: { id: studentId },
@@ -470,8 +437,44 @@ async function getUnlockedLevels(studentId: string) {
       practiceTimeDiv: 0,
       postTestTimeMult: 5,
       postTestTimeDiv: 5,
+      preTestSessionsCount: 3,
     } as any;
   }
+
+  const requiredPreTestSessions = settings?.preTestSessionsCount ?? 3;
+
+  const checkProgressForOp = async (opType: OperationType) => {
+    // Check if Pre-Test (Diagnostic exam) is completed for this operation type based on teacher settings
+    const preTestCount = await prisma.exam.count({
+      where: {
+        studentId,
+        examType: ExamType.DIAGNOSTIC,
+        operationType: opType
+      }
+    });
+    const preTestCompleted = preTestCount >= requiredPreTestSessions;
+
+    const beginner = await getLevelProgress(opType, 'BEGINNER');
+    const intermediate = await getLevelProgress(opType, 'INTERMEDIATE');
+    const advanced = await getLevelProgress(opType, 'ADVANCED');
+    const expert = await getLevelProgress(opType, 'EXPERT');
+
+    // ALL levels (including BEGINNER) are locked if Pre-Test is not completed!
+    const beginnerUnlocked = preTestCompleted;
+    const intermediateUnlocked = beginnerUnlocked && beginner.passed;
+    const advancedUnlocked = intermediateUnlocked && intermediate.passed;
+    const expertUnlocked = advancedUnlocked && advanced.passed;
+
+    return {
+      BEGINNER: { unlocked: beginnerUnlocked, progress: beginner, needsPreTest: !preTestCompleted },
+      INTERMEDIATE: { unlocked: intermediateUnlocked, progress: intermediate },
+      ADVANCED: { unlocked: advancedUnlocked, progress: advanced },
+      EXPERT: { unlocked: expertUnlocked, progress: expert }
+    };
+  };
+
+  const multiplication = await checkProgressForOp(OperationType.MULTIPLICATION);
+  const division = await checkProgressForOp(OperationType.DIVISION);
 
   return { 
     multiplication, 

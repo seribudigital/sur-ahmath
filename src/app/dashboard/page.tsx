@@ -298,11 +298,12 @@ function StudentDashboardContent() {
 
   const currentOp = activeTab === 'multiplication' ? 'MULTIPLICATION' : 'DIVISION';
   
+  const requiredPreTestSessions = settings?.preTestSessionsCount ?? 3;
   const currentPreTests = exams.filter(
     (e: any) => e.examType === 'DIAGNOSTIC' && e.operationType === currentOp
   );
   const currentPreTestCount = currentPreTests.length;
-  const currentHasPreTest = currentPreTestCount >= 3;
+  const currentHasPreTest = currentPreTestCount >= requiredPreTestSessions;
 
   const currentPostTest = exams
     .filter((e: any) => e.examType === 'POST_TEST' && e.operationType === currentOp)
@@ -416,16 +417,16 @@ function StudentDashboardContent() {
         {!currentHasPreTest && (
           <div className="bg-rose-500/10 border-2 border-rose-500/30 text-rose-300 p-5 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 backdrop-blur-sm animate-pulse">
             <div>
-              <h3 className="font-extrabold text-white text-base">⚠️ Ujian Diagnostik (Pre-Test) {activeTab === 'multiplication' ? 'Perkalian' : 'Pembagian'} Diperlukan ({currentPreTestCount}/3)</h3>
+              <h3 className="font-extrabold text-white text-base">⚠️ Ujian Diagnostik (Pre-Test) {activeTab === 'multiplication' ? 'Perkalian' : 'Pembagian'} Diperlukan ({currentPreTestCount}/{requiredPreTestSessions})</h3>
               <p className="text-slate-400 text-xs mt-1 leading-relaxed">
-                Anda wajib menyelesaikan Ujian Diagnostik {activeTab === 'multiplication' ? 'perkalian' : 'pembagian'} sebanyak 3 kali untuk menetapkan nilai dasar numerasi awal.
+                Anda wajib menyelesaikan Ujian Diagnostik {activeTab === 'multiplication' ? 'perkalian' : 'pembagian'} sebanyak {requiredPreTestSessions} kali untuk menetapkan nilai dasar numerasi awal.
               </p>
             </div>
             <a
               href={studentId ? `/practice?examType=DIAGNOSTIC&operationType=${currentOp}&studentId=${studentId}` : `/practice?examType=DIAGNOSTIC&operationType=${currentOp}`}
               className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-black shadow-lg shadow-rose-500/20 whitespace-nowrap transition-all hover:scale-[1.02]"
             >
-              Mulai Ujian Pre-Test ({currentPreTestCount + 1}/3)
+              Mulai Ujian Pre-Test ({currentPreTestCount + 1}/{requiredPreTestSessions})
             </a>
           </div>
         )}

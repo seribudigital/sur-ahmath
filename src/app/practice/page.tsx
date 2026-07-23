@@ -586,7 +586,8 @@ function PracticeInterfaceContent() {
   };
 
   const handleProceedToNextRound = async () => {
-    if (examRound >= 3) {
+    const requiredPreTestSessions = settings?.preTestSessionsCount ?? 3;
+    if (examRound >= requiredPreTestSessions) {
       // End the exam sessions and proceed to the final summary screen
       setInSession(false);
       setIsCompleted(true);
@@ -959,7 +960,7 @@ function PracticeInterfaceContent() {
                     <Award className="w-8 h-8" />
                   </div>
                   <CardTitle className="text-2xl text-slate-800 font-extrabold">
-                    Sesi {examRound}/3 Selesai
+                    Sesi {examRound}/{settings?.preTestSessionsCount ?? 3} Selesai
                   </CardTitle>
                   <CardDescription>
                     Hasil pengerjaan Ujian Diagnostik sesi ini
@@ -991,7 +992,7 @@ function PracticeInterfaceContent() {
                         : '💪 Tetap semangat dan lebih teliti di sesi berikutnya.'}
                     </p>
                     <p className="text-xs text-slate-500 mt-2 leading-relaxed">
-                      {examRound < 3 
+                      {examRound < (settings?.preTestSessionsCount ?? 3) 
                         ? 'Silakan istirahat sejenak (ambil napas dalam atau minum air) sebelum melanjutkan ke sesi berikutnya agar konsentrasi Anda tetap prima.' 
                         : 'Semua sesi Ujian Diagnostik telah selesai. Silakan lanjut untuk melihat evaluasi hasil akhir Anda.'}
                     </p>
@@ -1007,11 +1008,11 @@ function PracticeInterfaceContent() {
                     {loading ? (
                       <>
                         <RotateCcw className="w-5 h-5 mr-2 animate-spin" />
-                        {examRound < 3 ? `Menyiapkan Sesi ${examRound + 1}/3...` : 'Memuat Hasil...'}
+                        {examRound < (settings?.preTestSessionsCount ?? 3) ? `Menyiapkan Sesi ${examRound + 1}/${settings?.preTestSessionsCount ?? 3}...` : 'Memuat Hasil...'}
                       </>
                     ) : (
                       <>
-                        <span>{examRound < 3 ? `Lanjut ke Sesi ${examRound + 1}/3` : 'Lihat Hasil Akhir Ujian'}</span>
+                        <span>{examRound < (settings?.preTestSessionsCount ?? 3) ? `Lanjut ke Sesi ${examRound + 1}/${settings?.preTestSessionsCount ?? 3}` : 'Lihat Hasil Akhir Ujian'}</span>
                         <ChevronRight className="w-4 h-4 ml-1" />
                       </>
                     )}
@@ -1030,7 +1031,7 @@ function PracticeInterfaceContent() {
 
                 <CardHeader className="flex flex-row items-center justify-between pb-2 bg-slate-50/50">
                   <span className="text-xs font-extrabold text-slate-400 uppercase tracking-widest">
-                    {examType === 'DIAGNOSTIC' ? `Sesi ${examRound}/3 • ` : ''}Soal {currentIdx + 1} dari {questions.length}
+                    {examType === 'DIAGNOSTIC' ? `Sesi ${examRound}/${settings?.preTestSessionsCount ?? 3} • ` : ''}Soal {currentIdx + 1} dari {questions.length}
                   </span>
                   
                   {/* Precision Timer Indicator */}
