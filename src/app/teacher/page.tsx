@@ -127,6 +127,7 @@ function TeacherDashboardContent() {
   const [monitoringCooldownDays, setMonitoringCooldownDays] = useState(7);
   const [monitoringStagesCount, setMonitoringStagesCount] = useState(5);
   const [preTestSessionsCount, setPreTestSessionsCount] = useState(3);
+  const [postTestSessionsCount, setPostTestSessionsCount] = useState(1);
 
   // Load settings from database
   useEffect(() => {
@@ -154,6 +155,7 @@ function TeacherDashboardContent() {
           setMonitoringCooldownDays(data.settings.monitoringCooldownDays ?? 7);
           setMonitoringStagesCount(data.settings.monitoringStagesCount ?? 5);
           setPreTestSessionsCount(data.settings.preTestSessionsCount ?? 3);
+          setPostTestSessionsCount(data.settings.postTestSessionsCount ?? 1);
         }
       })
       .catch((err) => {
@@ -188,6 +190,7 @@ function TeacherDashboardContent() {
           monitoringCooldownDays,
           monitoringStagesCount,
           preTestSessionsCount,
+          postTestSessionsCount,
         }),
       });
       if (res.ok) {
@@ -793,8 +796,8 @@ function TeacherDashboardContent() {
                       <span className="text-[8px] text-slate-400 mt-1.5 block">* Jumlah sesi Ujian Monitoring untuk lulus total (default 5 kali)</span>
                     </div>
 
-                    <div className="space-y-1.5 p-4 bg-slate-50 rounded-xl border border-slate-100 shadow-sm sm:col-span-2">
-                      <h4 className="text-xs font-black text-rose-600 uppercase tracking-wider block mb-1">Pre-Test Diagnostik (Kelulusan Sesi Wajib)</h4>
+                    <div className="space-y-1.5 p-4 bg-slate-50 rounded-xl border border-slate-100 shadow-sm">
+                      <h4 className="text-xs font-black text-rose-600 uppercase tracking-wider block mb-1">Pre-Test Diagnostik</h4>
                       <label className="text-[10px] font-bold text-slate-500 block mb-1">Jumlah Sesi Wajib Pre-Test (Sesi)</label>
                       <input
                         type="number"
@@ -804,7 +807,21 @@ function TeacherDashboardContent() {
                         onChange={(e) => setPreTestSessionsCount(Math.max(1, parseInt(e.target.value) || 0))}
                         className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500/10 bg-white font-bold"
                       />
-                      <span className="text-[8px] text-slate-400 mt-1.5 block">* Jumlah kali sesi Ujian Diagnostik yang wajib diselesaikan siswa sebelum level latihan terbuka (default 3 kali)</span>
+                      <span className="text-[8px] text-slate-400 mt-1.5 block">* Jumlah sesi Ujian Diagnostik sebelum level latihan terbuka (default 3 kali)</span>
+                    </div>
+
+                    <div className="space-y-1.5 p-4 bg-slate-50 rounded-xl border border-slate-100 shadow-sm">
+                      <h4 className="text-xs font-black text-emerald-600 uppercase tracking-wider block mb-1">Post-Test (Ujian Akhir Master)</h4>
+                      <label className="text-[10px] font-bold text-slate-500 block mb-1">Jumlah Sesi Wajib Post-Test (Sesi)</label>
+                      <input
+                        type="number"
+                        min={1}
+                        max={10}
+                        value={postTestSessionsCount}
+                        onChange={(e) => setPostTestSessionsCount(Math.max(1, parseInt(e.target.value) || 0))}
+                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500/10 bg-white font-bold"
+                      />
+                      <span className="text-[8px] text-slate-400 mt-1.5 block">* Jumlah sesi Ujian Akhir Master yang wajib diselesaikan siswa (default 1 kali)</span>
                     </div>
                   </div>
                 </div>

@@ -239,7 +239,8 @@ function PracticeInterfaceContent() {
   }, [inSession, currentIdx, feedback]);
 
   const getFinalScore = () => {
-    if (examType === 'DIAGNOSTIC') {
+    const requiredSessions = examType === 'DIAGNOSTIC' ? (settings?.preTestSessionsCount ?? 3) : examType === 'POST_TEST' ? (settings?.postTestSessionsCount ?? 1) : 1;
+    if (examType === 'DIAGNOSTIC' || (examType === 'POST_TEST' && requiredSessions > 1)) {
       return examScores.length > 0 ? Math.round(examScores.reduce((sum, s) => sum + s, 0) / examScores.length) : 0;
     }
     return Math.round((totalCorrectRef.current / (questions.length || 1)) * 100);
@@ -522,7 +523,10 @@ function PracticeInterfaceContent() {
       startQuestionTimer();
     } else {
       // Completed current round of questions
-       if (examType === 'DIAGNOSTIC') {
+       const requiredExamSessions = examType === 'DIAGNOSTIC' ? (settings?.preTestSessionsCount ?? 3) : examType === 'POST_TEST' ? (settings?.postTestSessionsCount ?? 1) : 1;
+       const hasMultiSessions = (examType === 'DIAGNOSTIC' || examType === 'POST_TEST') && requiredExamSessions > 1;
+
+       if (hasMultiSessions) {
         // Calculate score for this round
         const roundScore = Math.round((totalCorrectRef.current / questions.length) * 100);
         const roundDuration = Math.round((Date.now() - examStartTimeRef.current) / 1000);
@@ -561,7 +565,7 @@ function PracticeInterfaceContent() {
         fetchProgress(true);
 
         if (examType) {
-          // Non-diagnostic exams (e.g. POST_TEST)
+          // Single session exams (e.g. single POST_TEST or MONITORING)
           const finalScore = Math.round((totalCorrectRef.current / questions.length) * 100);
           const finalDuration = Math.round((Date.now() - examStartTimeRef.current) / 1000);
           try {
@@ -586,8 +590,8 @@ function PracticeInterfaceContent() {
   };
 
   const handleProceedToNextRound = async () => {
-    const requiredPreTestSessions = settings?.preTestSessionsCount ?? 3;
-    if (examRound >= requiredPreTestSessions) {
+    const requiredExamSessions = examType === 'DIAGNOSTIC' ? (settings?.preTestSessionsCount ?? 3) : examType === 'POST_TEST' ? (settings?.postTestSessionsCount ?? 1) : 1;
+    if (examRound >= requiredExamSessions) {
       // End the exam sessions and proceed to the final summary screen
       setInSession(false);
       setIsCompleted(true);
@@ -697,6 +701,9 @@ function PracticeInterfaceContent() {
       </div>
     );
   };
+
+  const requiredExamSessions = examType === 'DIAGNOSTIC' ? (settings?.preTestSessionsCount ?? 3) : examType === 'POST_TEST' ? (settings?.postTestSessionsCount ?? 1) : 1;
+  const hasMultiSessions = (examType === 'DIAGNOSTIC' || examType === 'POST_TEST') && requiredExamSessions > 1;
 
   return (
     <div className="relative z-0 min-h-screen bg-[#f8fafc] text-slate-800 pb-12">
@@ -939,7 +946,13 @@ function PracticeInterfaceContent() {
                     ) : (
                       <>
                         <Play className="w-5 h-5 mr-2" />
-                        {examType ? 'Mulai Ujian Sekarang' : 'Mulai Belajar Sekarang'}
+                        {examType === 'DIAGNOSTIC' 
+                          ? `Mulai Sesi Ujian Diagnostik (Sesi ${examRound}/${requiredExamSessions})` 
+                          : examType === 'MONITORING' 
+                          ? `Mulai Ujian Monitoring Stage ${monitoringStage + 1}` 
+                          : examType === 'POST_TEST' 
+                          ? (hasMultiSessions ? `Mulai Ujian Akhir Master (Sesi ${examRound}/${requiredExamSessions})` : 'Mulai Ujian Akhir Master') 
+                          : 'Mulai Sesi Latihan'}
                       </>
                     )}
                   </button>
@@ -949,21 +962,20 @@ function PracticeInterfaceContent() {
           </Card>
         )}
 
-        {inSession && questions.length > 0 && (
-          <Card className="border border-slate-200 shadow-xl overflow-hidden relative">
-            
+        {/* IN SESSION SCREEN */}
+        {inSession && (
+          <Card className="border-slate-700 bg-white text-slate-900 shadow-2xl overflow-hidden rounded-2xl transition-all">
             {showRoundBreak ? (
               <>
-                <div className="h-2 bg-gradient-to-r from-amber-500 to-teal-500" />
-                <CardHeader className="text-center pb-2">
-                  <div className="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto mb-3 text-amber-600 animate-pulse">
-                    <Award className="w-8 h-8" />
+                <CardHeader className="text-center pt-8 pb-2 border-b border-slate-100 bg-slate-50/50">
+                  <div className="inline-flex items-center justify-center p-3 bg-teal-100 text-teal-700 rounded-full mb-3 shadow-inner">
+                    <CheckCircle2 className="w-8 h-8" />
                   </div>
                   <CardTitle className="text-2xl text-slate-800 font-extrabold">
-                    Sesi {examRound}/{settings?.preTestSessionsCount ?? 3} Selesai
+                    Sesi {examRound}/{requiredExamSessions} Selesai
                   </CardTitle>
                   <CardDescription>
-                    Hasil pengerjaan Ujian Diagnostik sesi ini
+                    Hasil pengerjaan {examType === 'DIAGNOSTIC' ? 'Ujian Diagnostik' : 'Ujian Akhir Master'} sesi ini
                   </CardDescription>
                 </CardHeader>
                 
@@ -992,9 +1004,9 @@ function PracticeInterfaceContent() {
                         : '💪 Tetap semangat dan lebih teliti di sesi berikutnya.'}
                     </p>
                     <p className="text-xs text-slate-500 mt-2 leading-relaxed">
-                      {examRound < (settings?.preTestSessionsCount ?? 3) 
+                      {examRound < requiredExamSessions 
                         ? 'Silakan istirahat sejenak (ambil napas dalam atau minum air) sebelum melanjutkan ke sesi berikutnya agar konsentrasi Anda tetap prima.' 
-                        : 'Semua sesi Ujian Diagnostik telah selesai. Silakan lanjut untuk melihat evaluasi hasil akhir Anda.'}
+                        : 'Semua sesi Ujian telah selesai. Silakan lanjut untuk melihat evaluasi hasil akhir Anda.'}
                     </p>
                   </div>
                 </CardContent>
@@ -1008,11 +1020,11 @@ function PracticeInterfaceContent() {
                     {loading ? (
                       <>
                         <RotateCcw className="w-5 h-5 mr-2 animate-spin" />
-                        {examRound < (settings?.preTestSessionsCount ?? 3) ? `Menyiapkan Sesi ${examRound + 1}/${settings?.preTestSessionsCount ?? 3}...` : 'Memuat Hasil...'}
+                        {examRound < requiredExamSessions ? `Menyiapkan Sesi ${examRound + 1}/${requiredExamSessions}...` : 'Memuat Hasil...'}
                       </>
                     ) : (
                       <>
-                        <span>{examRound < (settings?.preTestSessionsCount ?? 3) ? `Lanjut ke Sesi ${examRound + 1}/${settings?.preTestSessionsCount ?? 3}` : 'Lihat Hasil Akhir Ujian'}</span>
+                        <span>{examRound < requiredExamSessions ? `Lanjut ke Sesi ${examRound + 1}/${requiredExamSessions}` : 'Lihat Hasil Akhir Ujian'}</span>
                         <ChevronRight className="w-4 h-4 ml-1" />
                       </>
                     )}
@@ -1031,7 +1043,7 @@ function PracticeInterfaceContent() {
 
                 <CardHeader className="flex flex-row items-center justify-between pb-2 bg-slate-50/50">
                   <span className="text-xs font-extrabold text-slate-400 uppercase tracking-widest">
-                    {examType === 'DIAGNOSTIC' ? `Sesi ${examRound}/${settings?.preTestSessionsCount ?? 3} • ` : ''}Soal {currentIdx + 1} dari {questions.length}
+                    {hasMultiSessions ? `Sesi ${examRound}/${requiredExamSessions} • ` : ''}Soal {currentIdx + 1} dari {questions.length}
                   </span>
                   
                   {/* Precision Timer Indicator */}

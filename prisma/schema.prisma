@@ -209,8 +209,9 @@ model TeacherSetting {
   postTestTimeMult    Int      @default(5)  @map("post_test_time_mult")
   postTestTimeDiv     Int      @default(5)  @map("post_test_time_div")
   
-  // Pre-Test & Monitoring Configs
+  // Pre-Test, Post-Test & Monitoring Configs
   preTestSessionsCount   Int   @default(3)  @map("pre_test_sessions_count")
+  postTestSessionsCount  Int   @default(1)  @map("post_test_sessions_count")
   monitoringCooldownDays Int   @default(7)  @map("monitoring_cooldown_days")
   monitoringStagesCount  Int   @default(5)  @map("monitoring_stages_count")
 

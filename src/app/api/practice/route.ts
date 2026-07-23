@@ -438,6 +438,7 @@ async function getUnlockedLevels(studentId: string) {
       postTestTimeMult: 5,
       postTestTimeDiv: 5,
       preTestSessionsCount: 3,
+      postTestSessionsCount: 1,
     } as any;
   }
 
