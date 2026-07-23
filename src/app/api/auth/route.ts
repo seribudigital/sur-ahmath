@@ -58,25 +58,69 @@ export async function POST(request: Request) {
       return setSessionCookie(response, tokenString);
     }
 
-    // B. Email/Password Login for Siswa & Guru
+    // B. Email/Username/Nama & Password Login for Siswa & Guru
     if (!email || !password) {
       return NextResponse.json(
-        { error: 'Email dan password wajib diisi' },
+        { error: 'Email / Nama dan password wajib diisi' },
         { status: 400 }
       );
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() },
+    const rawInput = email.trim();
+    const cleanInput = rawInput.toLowerCase();
+
+    // 1. Exact email match
+    let user = await prisma.user.findUnique({
+      where: { email: cleanInput },
       include: {
         student: true,
         teacher: true
       }
     });
 
+    // 2. Formatted username match (e.g. "siswa.novan" -> "siswa.novan@surahmath.id")
+    if (!user) {
+      const sanitized = cleanInput.replace(/[^a-z0-9]/g, '');
+      const formattedEmail = cleanInput.startsWith('siswa.') 
+        ? `${cleanInput.split('@')[0]}@surahmath.id` 
+        : `siswa.${sanitized}@surahmath.id`;
+
+      user = await prisma.user.findUnique({
+        where: { email: formattedEmail },
+        include: {
+          student: true,
+          teacher: true
+        }
+      });
+    }
+
+    // 3. Student Name match (case-insensitive)
+    if (!user) {
+      const studentMatch = await prisma.student.findFirst({
+        where: {
+          nama: {
+            equals: rawInput,
+            mode: 'insensitive'
+          }
+        },
+        include: {
+          user: true,
+          teacher: true
+        }
+      });
+
+      if (studentMatch && studentMatch.user) {
+        user = {
+          ...studentMatch.user,
+          student: studentMatch,
+          teacher: null
+        } as any;
+      }
+    }
+
     if (!user || !verifyPassword(password, user.passwordHash)) {
       return NextResponse.json(
-        { error: 'Email atau password salah' },
+        { error: 'Email/Nama atau password salah' },
         { status: 401 }
       );
     }

@@ -197,17 +197,17 @@ export default function Home() {
 
                 {activeTab === 'users' ? (
                   <>
-                    {/* Email Input */}
+                    {/* Email / Username / Nama Input */}
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Alamat Email</label>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Alamat Email / Nama Lengkap Siswa</label>
                       <div className="relative">
                         <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
                         <input
-                          type="email"
+                          type="text"
                           required
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
-                          placeholder="masukkan@sekolah.id"
+                          placeholder="Email (siswa.budi@surahmath.id) atau Nama Lengkap"
                           className="w-full pl-10 pr-4 py-3 bg-slate-950/50 border border-slate-800 rounded-xl text-sm focus:outline-none focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 text-white placeholder-slate-650 transition-all"
                         />
                       </div>

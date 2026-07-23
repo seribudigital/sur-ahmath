@@ -21,35 +21,39 @@ export function hashPassword(password: string): string {
  * - Plaintext format (no ":" delimiter for old/seeded accounts)
  */
 export function verifyPassword(password: string, storedValue: string): boolean {
-  if (!storedValue || typeof storedValue !== 'string') return false;
-  
-  if (!storedValue.includes(':')) {
-    // Legacy support for plain passwords
-    return password === storedValue;
-  }
+  if (!storedValue || typeof storedValue !== 'string' || !password) return false;
 
-  const parts = storedValue.split(':');
-  let salt: string;
-  let iterations = LEGACY_ITERATIONS;
-  let storedHash: string;
+  const checkOne = (pass: string) => {
+    if (!storedValue.includes(':')) {
+      // Legacy support for plain passwords
+      return pass === storedValue;
+    }
 
-  if (parts.length === 3) {
-    salt = parts[0];
-    iterations = parseInt(parts[1], 10) || LEGACY_ITERATIONS;
-    storedHash = parts[2];
-  } else if (parts.length === 2) {
-    salt = parts[0];
-    iterations = LEGACY_ITERATIONS;
-    storedHash = parts[1];
-  } else {
-    return false;
-  }
+    const parts = storedValue.split(':');
+    let salt: string;
+    let iterations = LEGACY_ITERATIONS;
+    let storedHash: string;
 
-  try {
-    const verifyHash = pbkdf2Sync(password, salt, iterations, 64, 'sha512').toString('hex');
-    return storedHash === verifyHash;
-  } catch (err) {
-    return false;
-  }
+    if (parts.length === 3) {
+      salt = parts[0];
+      iterations = parseInt(parts[1], 10) || LEGACY_ITERATIONS;
+      storedHash = parts[2];
+    } else if (parts.length === 2) {
+      salt = parts[0];
+      iterations = LEGACY_ITERATIONS;
+      storedHash = parts[1];
+    } else {
+      return false;
+    }
+
+    try {
+      const verifyHash = pbkdf2Sync(pass, salt, iterations, 64, 'sha512').toString('hex');
+      return storedHash === verifyHash;
+    } catch (err) {
+      return false;
+    }
+  };
+
+  return checkOne(password) || checkOne(password.trim());
 }
 
