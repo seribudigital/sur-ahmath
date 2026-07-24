@@ -85,6 +85,8 @@ function StudentDashboardContent() {
   const [exams, setExams] = useState<any[]>([]);
   const [teacherComment, setTeacherComment] = useState('Belum ada catatan evaluasi dari guru pengajar.');
   const [settings, setSettings] = useState<any>({
+    preTestSessionsCount: 3,
+    postTestSessionsCount: 1,
     monitoringCooldownDays: 7,
     monitoringStagesCount: 5,
   });
@@ -443,7 +445,7 @@ function StudentDashboardContent() {
               href={studentId ? `/practice?examType=DIAGNOSTIC&operationType=${currentOp}&studentId=${studentId}` : `/practice?examType=DIAGNOSTIC&operationType=${currentOp}`}
               className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-black shadow-lg shadow-rose-500/20 whitespace-nowrap transition-all hover:scale-[1.02]"
             >
-              Mulai Ujian Pre-Test ({currentPreTestCount + 1}/{requiredPreTestSessions})
+              Mulai Ujian Pre-Test ({Math.min(currentPreTestCount + 1, requiredPreTestSessions)}/{requiredPreTestSessions})
             </a>
           </div>
         )}

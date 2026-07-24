@@ -243,8 +243,10 @@ function PracticeInterfaceContent() {
 
   const getFinalScore = () => {
     const requiredSessions = examType === 'DIAGNOSTIC' ? (settings?.preTestSessionsCount ?? 3) : examType === 'POST_TEST' ? (settings?.postTestSessionsCount ?? 1) : 1;
-    if (examType === 'DIAGNOSTIC' || (examType === 'POST_TEST' && requiredSessions > 1)) {
-      return examScores.length > 0 ? Math.round(examScores.reduce((sum, s) => sum + s, 0) / examScores.length) : 0;
+    const hasMultiSessions = (examType === 'DIAGNOSTIC' || examType === 'POST_TEST') && requiredSessions > 1;
+
+    if (hasMultiSessions && examScores.length > 0) {
+      return Math.round(examScores.reduce((sum, s) => sum + s, 0) / examScores.length);
     }
     return Math.round((totalCorrectRef.current / (questions.length || 1)) * 100);
   };
@@ -600,6 +602,7 @@ function PracticeInterfaceContent() {
       setIsCompleted(true);
       setShowRoundBreak(false);
       setCompletedRoundScore(null);
+      fetchProgress(true);
       return;
     }
 
@@ -1250,8 +1253,8 @@ function PracticeInterfaceContent() {
                     {getFinalScore()}%
                   </span>
                   <span className="text-[10px] text-slate-500 font-medium block mt-0.5">
-                    {examType === 'DIAGNOSTIC'
-                      ? `${totalCorrectAllRounds} dari ${questions.length * 3} Benar`
+                    {examType === 'DIAGNOSTIC' || (examType === 'POST_TEST' && hasMultiSessions)
+                      ? `${hasMultiSessions && examScores.length > 0 ? totalCorrectAllRounds : totalCorrectRef.current} dari ${questions.length * requiredExamSessions} Benar`
                       : `${totalCorrectRef.current} dari ${questions.length} Benar`
                     }
                   </span>
