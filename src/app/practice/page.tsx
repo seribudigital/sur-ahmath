@@ -47,6 +47,7 @@ function PracticeInterfaceContent() {
   const [practiceMode, setPracticeMode] = useState<'FLASH_DRILL' | 'MISSING_NUMBER'>('FLASH_DRILL');
   const [limit, setLimit] = useState(10);
   const [settings, setSettings] = useState<any>(null);
+  const [initialLoading, setInitialLoading] = useState(true);
   
   // 2. Active Session States
   const [loading, setLoading] = useState(false);
@@ -103,7 +104,10 @@ function PracticeInterfaceContent() {
   };
 
   const fetchProgress = async (isSessionCompletion = false) => {
-    if (!studentId) return;
+    if (!studentId) {
+      setInitialLoading(false);
+      return;
+    }
     try {
       const res = await fetch(`/api/practice?studentId=${studentId}&checkProgress=true`);
       const data = await res.json();
@@ -132,6 +136,14 @@ function PracticeInterfaceContent() {
       }
       if (res.ok && data.settings) {
         setSettings(data.settings);
+        const isMult = (queryOperation || operationType) === 'MULTIPLICATION';
+        if (examType === 'DIAGNOSTIC') {
+          setLimit(isMult ? data.settings.preTestLimitMult : data.settings.preTestLimitDiv);
+        } else if (examType === 'POST_TEST') {
+          setLimit(isMult ? data.settings.postTestLimitMult : data.settings.postTestLimitDiv);
+        } else {
+          setLimit(isMult ? data.settings.practiceLimitMult : data.settings.practiceLimitDiv);
+        }
       }
       if (res.ok) {
         setExamRequested(data.examRequested ?? false);
@@ -141,6 +153,8 @@ function PracticeInterfaceContent() {
       }
     } catch (err) {
       console.error('Failed to fetch level progress:', err);
+    } finally {
+      setInitialLoading(false);
     }
   };
 
@@ -745,6 +759,12 @@ function PracticeInterfaceContent() {
       <div className="max-w-xl mx-auto px-4 mt-12">
         {/* SETUP SCREEN */}
         {!inSession && !isCompleted && (
+          initialLoading ? (
+            <Card className="border border-slate-200 shadow-xl overflow-hidden p-12 text-center bg-white">
+              <Loader2 className="w-8 h-8 animate-spin text-teal-600 mx-auto mb-3" />
+              <p className="text-xs font-bold text-slate-500">Memuat Aturan &amp; Pengaturan Ujian...</p>
+            </Card>
+          ) : (
           <Card className="border border-slate-200 shadow-xl overflow-hidden">
             <div className="h-2 bg-gradient-to-r from-teal-500 to-indigo-500" />
             <CardHeader>
@@ -966,6 +986,7 @@ function PracticeInterfaceContent() {
               })()}
             </CardFooter>
           </Card>
+          )
         )}
 
         {/* IN SESSION SCREEN */}
