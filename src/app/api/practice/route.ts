@@ -78,14 +78,17 @@ export async function GET(request: Request) {
       );
     }
 
+    const examTypeParam = searchParams.get('examType'); // 'DIAGNOSTIC', 'POST_TEST', 'MONITORING'
     const limit = parseInt(limitParam, 10);
-    const maxTable = getMaxTableForLevel(level);
+    // If examType is present or level is EXPERT, use maxTable = 10 for full table scope
+    const maxTable = (examTypeParam || level.toUpperCase() === 'EXPERT') ? 10 : getMaxTableForLevel(level);
 
     // 1. Generate full pool of possible questions for this level
     // Each question is represented by a unique key: "operand1-operand2"
     interface QuestionCandidate {
       operand1: number;
       operand2: number;
+      tableGroup: number; // 1: 1-2, 2: 3-5, 3: 6-7, 4: 8-10
       key: string;
     }
     const pool: QuestionCandidate[] = [];
@@ -94,9 +97,15 @@ export async function GET(request: Request) {
       // Multiplication: Table (1 to maxTable) x Multiplier (1 to 10)
       for (let table = 1; table <= maxTable; table++) {
         for (let mult = 1; mult <= 10; mult++) {
+          let tableGroup = 1;
+          if (table >= 3 && table <= 5) tableGroup = 2;
+          else if (table >= 6 && table <= 7) tableGroup = 3;
+          else if (table >= 8) tableGroup = 4;
+
           pool.push({
             operand1: table,
             operand2: mult,
+            tableGroup,
             key: `${table}-${mult}`,
           });
         }
@@ -104,13 +113,18 @@ export async function GET(request: Request) {
     } else {
       // Division: Dividend / Divisor = Quotient
       // Divisor (table) is 1 to maxTable, Quotient (mult) is 1 to 10
-      // Dividend is Table * Quotient
       for (let table = 1; table <= maxTable; table++) {
         for (let mult = 1; mult <= 10; mult++) {
+          let tableGroup = 1;
+          if (table >= 3 && table <= 5) tableGroup = 2;
+          else if (table >= 6 && table <= 7) tableGroup = 3;
+          else if (table >= 8) tableGroup = 4;
+
           const dividend = table * mult;
           pool.push({
             operand1: dividend,
             operand2: table, // Divisor
+            tableGroup,
             key: `${dividend}-${table}`,
           });
         }
@@ -118,12 +132,9 @@ export async function GET(request: Request) {
     }
 
     // 2. Fetch student's historical incorrect answers (adaptive data)
-    // Querying through the session table using index optimizations
     const incorrectLogs = await prisma.questionLog.findMany({
       where: {
-        session: {
-          studentId,
-        },
+        session: { studentId },
         operationType,
         correct: false,
       },
@@ -140,53 +151,105 @@ export async function GET(request: Request) {
       failCounts.set(key, (failCounts.get(key) || 0) + 1);
     }
 
-    // 3. Assign weights to each question in the pool
-    // Default weight is 1.0. If a question was answered incorrectly, increase weight by 90% (to 1.9)
+    // 3. Assign weights to each candidate in the pool
     interface WeightedCandidate {
       candidate: QuestionCandidate;
       weight: number;
     }
-    let weightedPool: WeightedCandidate[] = pool.map((item) => {
+    const weightedPool: WeightedCandidate[] = pool.map((item) => {
       const failCount = failCounts.get(item.key) || 0;
-      const weight = failCount > 0 ? 1.9 : 1.0;
+      let baseWeight = 1.0;
+
+      // De-prioritize trivial questions (x1, ÷1, x2, ÷2) when maxTable is 10 to focus on larger numbers
+      if (maxTable === 10 || examTypeParam) {
+        if (operationType === 'MULTIPLICATION') {
+          if (item.operand1 === 1 || item.operand2 === 1) baseWeight = 0.2;
+          else if (item.operand1 === 2 || item.operand2 === 2) baseWeight = 0.5;
+        } else {
+          if (item.operand2 === 1 || (item.operand1 / item.operand2) === 1) baseWeight = 0.2;
+          else if (item.operand2 === 2 || (item.operand1 / item.operand2) === 2) baseWeight = 0.5;
+        }
+      }
+
+      const weight = failCount > 0 ? (baseWeight + 1.5 * failCount) : baseWeight;
       return {
         candidate: item,
         weight,
       };
     });
 
-    // 4. Perform weighted random sampling without replacement
-    const selectedQuestions: QuestionCandidate[] = [];
-    const questionsToGenerate = Math.min(limit, pool.length);
+    // Helper for weighted sampling without replacement from a candidates pool
+    function sampleFromCandidates(candidates: WeightedCandidate[], count: number): QuestionCandidate[] {
+      const selected: QuestionCandidate[] = [];
+      const tempPool = [...candidates];
+      const itemsToPick = Math.min(count, tempPool.length);
 
-    for (let s = 0; s < questionsToGenerate; s++) {
-      // Calculate total weight of remaining candidates
-      const totalWeight = weightedPool.reduce((sum, item) => sum + item.weight, 0);
-      if (totalWeight <= 0) break;
+      for (let s = 0; s < itemsToPick; s++) {
+        const totalWeight = tempPool.reduce((sum, item) => sum + item.weight, 0);
+        if (totalWeight <= 0) break;
 
-      // Pick a random value in [0, totalWeight)
-      let randomValue = Math.random() * totalWeight;
-      let selectedIndex = -1;
+        let randomValue = Math.random() * totalWeight;
+        let selectedIndex = -1;
 
-      // Locate the candidate corresponding to the random value
-      for (let i = 0; i < weightedPool.length; i++) {
-        randomValue -= weightedPool[i].weight;
-        if (randomValue <= 0) {
-          selectedIndex = i;
-          break;
+        for (let i = 0; i < tempPool.length; i++) {
+          randomValue -= tempPool[i].weight;
+          if (randomValue <= 0) {
+            selectedIndex = i;
+            break;
+          }
         }
+
+        if (selectedIndex === -1) {
+          selectedIndex = tempPool.length - 1;
+        }
+
+        selected.push(tempPool[selectedIndex].candidate);
+        tempPool.splice(selectedIndex, 1);
       }
 
-      if (selectedIndex === -1) {
-        selectedIndex = weightedPool.length - 1;
+      return selected;
+    }
+
+    let selectedQuestions: QuestionCandidate[] = [];
+
+    // 4. Perform sampling based on requested distribution for exams and full-table levels:
+    // Group 1 (Table 1-2): 10%
+    // Group 2 (Table 3-5): 30%
+    // Group 3 (Table 6-7): 30%
+    // Group 4 (Table 8-10): 30%
+    if (maxTable === 10 || examTypeParam) {
+      const g1 = weightedPool.filter(w => w.candidate.tableGroup === 1);
+      const g2 = weightedPool.filter(w => w.candidate.tableGroup === 2);
+      const g3 = weightedPool.filter(w => w.candidate.tableGroup === 3);
+      const g4 = weightedPool.filter(w => w.candidate.tableGroup === 4);
+
+      const target1 = Math.round(limit * 0.10);
+      const target2 = Math.round(limit * 0.30);
+      const target3 = Math.round(limit * 0.30);
+      const target4 = Math.max(0, limit - target1 - target2 - target3);
+
+      const sel1 = sampleFromCandidates(g1, target1);
+      const sel2 = sampleFromCandidates(g2, target2);
+      const sel3 = sampleFromCandidates(g3, target3);
+      const sel4 = sampleFromCandidates(g4, target4);
+
+      selectedQuestions = [...sel1, ...sel2, ...sel3, ...sel4];
+
+      // Fill quota if any group fell short
+      if (selectedQuestions.length < limit && selectedQuestions.length < pool.length) {
+        const pickedKeys = new Set(selectedQuestions.map(q => q.key));
+        const remainingPool = weightedPool.filter(w => !pickedKeys.has(w.candidate.key));
+        const filled = sampleFromCandidates(remainingPool, limit - selectedQuestions.length);
+        selectedQuestions.push(...filled);
       }
 
-      // Add selected candidate to results
-      const selected = weightedPool[selectedIndex].candidate;
-      selectedQuestions.push(selected);
-
-      // Remove the selected candidate from the pool to avoid duplicate questions
-      weightedPool.splice(selectedIndex, 1);
+      // Shuffle final questions list so question presentation order is randomized
+      for (let i = selectedQuestions.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [selectedQuestions[i], selectedQuestions[j]] = [selectedQuestions[j], selectedQuestions[i]];
+      }
+    } else {
+      selectedQuestions = sampleFromCandidates(weightedPool, limit);
     }
 
     // Format output with expected questions structures

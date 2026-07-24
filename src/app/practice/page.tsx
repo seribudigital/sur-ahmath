@@ -319,7 +319,7 @@ function PracticeInterfaceContent() {
       setSessionId(sessionData.sessionId);
 
       // Step B: Get Questions (GET from backend with adaptive logic)
-      const qRes = await fetch(`/api/practice?studentId=${studentId}&operationType=${operationType}&level=${level}&limit=${limit}`);
+      const qRes = await fetch(`/api/practice?studentId=${studentId}&operationType=${operationType}&level=${level}&limit=${limit}${examType ? `&examType=${examType}` : ''}`);
       const qData = await qRes.json();
       
       if (!qRes.ok) throw new Error(qData.error || 'Failed to fetch questions');
@@ -608,7 +608,7 @@ function PracticeInterfaceContent() {
 
     setLoading(true);
     try {
-      const qRes = await fetch(`/api/practice?studentId=${studentId}&operationType=${operationType}&level=${level}&limit=${limit}`);
+      const qRes = await fetch(`/api/practice?studentId=${studentId}&operationType=${operationType}&level=${level}&limit=${limit}${examType ? `&examType=${examType}` : ''}`);
       const qData = await qRes.json();
       if (!qRes.ok) throw new Error(qData.error || 'Failed to fetch questions');
       
