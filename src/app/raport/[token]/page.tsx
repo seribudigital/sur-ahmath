@@ -434,7 +434,7 @@ export default function ParentPortal({ params }: { params: React.Usable<{ token:
                                 className={`w-7 h-7 flex items-center justify-center rounded text-[9px] font-bold border mr-0.5 relative group/cell print-heatmap-cell ${colorClass}`}
                               >
                                 <span>
-                                  {activeTab === 'multiplication' ? rowNum * colNum : colNum}
+                                  {rowNum * colNum}
                                 </span>
                               </div>
                             );

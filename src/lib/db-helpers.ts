@@ -50,13 +50,27 @@ export async function getMasteryHeatmap(
 
     // Populate matrix map from aggregations
     for (const group of aggregations) {
-      const key = `${group.operand1}-${group.operand2}`;
-      const existing = cellMap.get(key);
-      if (existing) {
-        existing.total += group._count.id;
-        existing.totalTime += group._sum.responseTime || 0;
-        if (group.correct) {
-          existing.correct += group._count.id;
+      let row = group.operand1;
+      let col = group.operand2;
+
+      if (operationType === 'DIVISION') {
+        // For Division (A / B = C): operand1 = Dividend (A), operand2 = Divisor (B)
+        // Row = Quotient (C = A / B), Col = Divisor (B)
+        if (group.operand2 > 0) {
+          row = Math.round(group.operand1 / group.operand2);
+          col = group.operand2;
+        }
+      }
+
+      if (row >= 1 && row <= 10 && col >= 1 && col <= 10) {
+        const key = `${row}-${col}`;
+        const existing = cellMap.get(key);
+        if (existing) {
+          existing.total += group._count.id;
+          existing.totalTime += group._sum.responseTime || 0;
+          if (group.correct) {
+            existing.correct += group._count.id;
+          }
         }
       }
     }

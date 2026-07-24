@@ -761,10 +761,7 @@ function StudentDashboardContent() {
                               title={`${rowNum} ${activeTab === 'multiplication' ? 'x' : '÷'} ${colNum}`}
                             >
                               <span>
-                                {activeTab === 'multiplication' 
-                                  ? `${rowNum * colNum}` 
-                                  : `${colNum}`
-                                }
+                                {rowNum * colNum}
                               </span>
 
                               {/* Cell Tooltip details */}
@@ -772,7 +769,7 @@ function StudentDashboardContent() {
                                 <p className="font-extrabold border-b border-slate-700 pb-1 mb-1 text-center text-teal-300">
                                   {activeTab === 'multiplication' 
                                     ? `${rowNum} × ${colNum} = ${rowNum * colNum}` 
-                                    : `${rowNum} ÷ ${colNum} = ${rowNum / colNum}`
+                                    : `${rowNum * colNum} ÷ ${colNum} = ${rowNum}`
                                   }
                                 </p>
                                 <p>Sesi Latihan: {cell.totalCount} kali</p>
